@@ -13,8 +13,8 @@
 		<VarDeclaration Name="FU_MODBUS_LESEN" Type="WSTRING" Comment="Zyklisches Lesen (500 ms), Adressen DEZIMAL (FORTE parst mit strtoul Basis 10!): 36864..36868 =" InitialValue="&quot;modbus[tcp:192.168.1.200:4196:1:500:h36864..36868,h36870,h37682,h37683:]&quot;"/>
 		<VarDeclaration Name="FU_MODBUS_KOMMANDO" Type="WSTRING" Comment="Steuerwort 9300H = 37632 dezimal (1=Vorwaerts, 2=Rueckwaerts, 5=Freier Auslauf, 6=Rampenstopp," InitialValue="&quot;modbus[tcp:192.168.1.200:4196:1:500::h37632]&quot;"/>
 		<VarDeclaration Name="FU_MODBUS_SOLLWERT" Type="WSTRING" Comment="Frequenzsollwert 9301H = 37633 dezimal, 0..10000 = 0,00..100,00 % von P0.1.16 (Maximalfrequenz)," InitialValue="&quot;modbus[tcp:192.168.1.200:4196:1:500::h37633]&quot;"/>
-		<VarDeclaration Name="FU_FMAX_HZ" Type="REAL" Comment="Muss zu P0.1.16 (Maximalfrequenz) am Umrichter passen, Werksdefault 50,00 Hz" InitialValue="50.0"/>
-		<VarDeclaration Name="FU_SOLLWERT_FAKTOR" Type="REAL" Comment="Hz -&gt; Registerwert 9301H: 10000 / FU_FMAX_HZ (200.0 bei 50 Hz) - bei Aenderung von FU_FMAX_HZ mit" InitialValue="REAL#200.0"/>
+		<VarDeclaration Name="FU_FMAX_HZ" Type="REAL" Comment="Muss zu P0.1.16 (Maximalfrequenz) UND P0.1.18 (obere Grenzfrequenz) am Umrichter passen, beide am 2026-11-02 auf 80,00 Hz gesetzt" InitialValue="80.0"/>
+		<VarDeclaration Name="FU_SOLLWERT_FAKTOR" Type="REAL" Comment="Hz -&gt; Registerwert 9301H: 10000 / FU_FMAX_HZ (125.0 bei 80 Hz) - bei Aenderung von FU_FMAX_HZ mit anpassen. Typisiertes Literal REAL#, weil es an den generischen Eingang F_MUL.IN2 geht." InitialValue="REAL#125.0"/>
 		<VarDeclaration Name="FU_SKALIERUNG_0_01" Type="REAL" Comment="Registerauflösung 0,01 (Frequenz in Hz, Strom in A)" InitialValue="0.01"/>
 		<VarDeclaration Name="FU_SKALIERUNG_0_1" Type="REAL" Comment="Registerauflösung 0,1 (Zwischenkreisspannung in V, Leistung in kW)" InitialValue="0.1"/>
 		<VarDeclaration Name="FU_SKALIERUNG_1" Type="REAL" Comment="Registerauflösung 1 (Ausgangsspannung in V)" InitialValue="1.0"/>
@@ -38,8 +38,8 @@ GLOBALCONSTANTS FU_Demo_Konstanten
 		                                                                                // verhindert. REQ schreibt trotzdem sofort.
 		FU_MODBUS_SOLLWERT : WSTRING := "modbus[tcp:192.168.1.200:4196:1:500::h37633]"; // Frequenzsollwert 9301H = 37633 dezimal, 0..10000 = 0,00..100,00 % von P0.1.16 (Maximalfrequenz),
 		                                                                                // nur RAM, kein EEPROM-Verschleiss. pollFrequency siehe FU_MODBUS_KOMMANDO.
-		FU_FMAX_HZ : REAL := 50.0; // Muss zu P0.1.16 (Maximalfrequenz) am Umrichter passen, Werksdefault 50,00 Hz
-		FU_SOLLWERT_FAKTOR : REAL := REAL#200.0; // Hz -> Registerwert 9301H: 10000 / FU_FMAX_HZ (200.0 bei 50 Hz) - bei Aenderung von FU_FMAX_HZ mit
+		FU_FMAX_HZ : REAL := 80.0; // Muss zu P0.1.16 (Maximalfrequenz) UND P0.1.18 (obere Grenzfrequenz) am Umrichter passen, beide am 2026-11-02 auf 80,00 Hz gesetzt
+		FU_SOLLWERT_FAKTOR : REAL := REAL#125.0; // Hz -> Registerwert 9301H: 10000 / FU_FMAX_HZ (125.0 bei 80 Hz) - bei Aenderung von FU_FMAX_HZ mit
 		                                         // anpassen. Typisiertes Literal REAL#, weil es an den generischen Eingang F_MUL.IN2 geht.
 		FU_SKALIERUNG_0_01 : REAL := 0.01; // Registerauflösung 0,01 (Frequenz in Hz, Strom in A)
 		FU_SKALIERUNG_0_1 : REAL := 0.1; // Registerauflösung 0,1 (Zwischenkreisspannung in V, Leistung in kW)

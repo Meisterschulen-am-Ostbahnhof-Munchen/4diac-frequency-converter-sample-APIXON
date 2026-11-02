@@ -148,9 +148,14 @@
     {
       "file": "FU_Demo_APIXON.fboot",
       "size": 18256,
-      "sha256": "d29c965450c5157eca1e2ef151990a5a446499a4f06e8dd58917764d6ddb312b"
+      "sha256": "48a06877d778697acbbf5ce2c95c2e9a8c0159f16fc4b8ad30e8a87f9577a40e"
+    },
+    {
+      "file": "fu-demo-dashboard.html",
+      "size": 736072,
+      "sha256": "33a314d25a2c922d14cc13762dee3f8dfa72beec9fca8006ebf2d80a62813361"
     }
   ],
-  "manifest_sha256": "fb4e1e345ae7e9ca74b20f9ec2949286404e3ed0311eadea497ac08b77a4e949",
+  "manifest_sha256": "df1023a73032fa24a215c40ff25c8fb4310c28deacdba0ece47022b4bcd50bde",
   "signature": null
 }

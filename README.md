@@ -89,12 +89,16 @@ npm run build      # -> dist/fu-demo-dashboard.html
 
 In der 4diac IDE (Projekt `FU_Demo`, Ordner `Launches/`) oder direkt per Python:
 
-1. Boot-File in der IDE erzeugen (`boot-files/FU_Demo_APIXON.fboot`).
+1. Boot-File in der IDE erzeugen (`boot-files/FU_Demo_APIXON.fboot`) und das Dashboard bauen
+   (`npm run build` in `Web-Clients/opcua-dashboard`).
 2. `RunSkript_MakeLibsManifest` (`scripts_central/make_libs_manifest.py`): schreibt
    `boot-files/FU_Demo_APIXON.libs.json` mit den benötigten ELF-Libs (riscv32), ohne Netzwerk.
-3. `RunSkript_Deploy` (`scripts_central/make_fu_demo_deploy.py`): lädt fboot, Manifest und
-   ELF-Libs nach `http://192.168.1.11/` hoch (unveränderte Dateien per SHA256 übersprungen)
-   und löscht danach andere `*.fboot`. Danach die APIXON neu starten.
+3. `RunSkript_Deploy` (`scripts_central/make_fu_demo_deploy.py`): lädt fboot, Manifest,
+   ELF-Libs und `fu-demo-dashboard.html` nach `http://192.168.1.11/` hoch (unveränderte
+   Dateien per SHA256 übersprungen) und löscht danach andere `*.fboot`. Danach die APIXON
+   neu starten. Das Dashboard ist dann direkt vom Gerät erreichbar:
+   `http://192.168.1.11/fu-demo-dashboard.html` (verbindet sich automatisch mit
+   `ws://<diese Adresse>:4841`).
 
 Nie ein neues fboot ohne neu erzeugtes Manifest hochladen: Das Manifest enthält Hash und
 Größe des fboot.

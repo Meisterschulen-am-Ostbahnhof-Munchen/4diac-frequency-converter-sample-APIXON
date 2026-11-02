@@ -105,8 +105,12 @@ import {
   type MesswertKey,
 } from './h300'
 
-// Port 4841 = OPC UA ueber WebSocket der APIXON-FORTE (wie im Krauternter-Dashboard)
-const endpointUrl = ref('ws://192.168.1.11:4841')
+// Port 4841 = OPC UA ueber WebSocket der APIXON-FORTE (wie im Krauternter-Dashboard).
+// Vom Geraet selbst ausgeliefert (http://<APIXON>/fu-demo-dashboard.html) -> dessen Host,
+// als lokale Datei geoeffnet (file://) -> feste APIXON-IP.
+const endpointUrl = ref(
+  `ws://${window.location.protocol.startsWith('http') && window.location.hostname ? window.location.hostname : '192.168.1.11'}:4841`
+)
 const connected = ref(false)
 const verbindungsText = ref('Getrennt')
 

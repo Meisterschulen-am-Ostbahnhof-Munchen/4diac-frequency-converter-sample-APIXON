@@ -21,7 +21,9 @@ else:
 
 # Ein Knoten: die APIXON (feste IP aus APIXON/ethernet.ini). Kein VT-Pool.
 NODE_BASES: dict[str, list[str]] = {
-    "192.168.1.11": ["FU_Demo_APIXON.fboot"],
+    # fu-demo-dashboard.html: Single-File-Build des OPC-UA-Dashboards, danach
+    # direkt vom Geraet aufrufbar: http://192.168.1.11/fu-demo-dashboard.html
+    "192.168.1.11": ["FU_Demo_APIXON.fboot", "fu-demo-dashboard.html"],
 }
 
 # Pfade im Repo (relativ zu Ventilsteuerung/).
@@ -29,6 +31,8 @@ REPO_PATHS: dict[str, str] = {
     "FU_Demo_APIXON.fboot": "boot-files/FU_Demo_APIXON.fboot",
     # Von make_libs_manifest.py erzeugtes Manifest, wird beim Deploy bevorzugt.
     "FU_Demo_APIXON.libs.json": "boot-files/FU_Demo_APIXON.libs.json",
+    # Vorher bauen: cd Web-Clients/opcua-dashboard && npm run build
+    "fu-demo-dashboard.html": "Web-Clients/opcua-dashboard/dist/fu-demo-dashboard.html",
 }
 
 # Kein VT-Pool im FU-Demo - nur fuer die aus Krauternter uebernommene

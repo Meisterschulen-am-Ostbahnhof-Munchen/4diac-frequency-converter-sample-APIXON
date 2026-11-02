@@ -2,8 +2,8 @@
 // FU-Demo. Die NodeIds muessen zu FU_Demo_Konstanten.gcf passen
 // (FU_MESSWERTE_WEB_WRITE / FU_KOMMANDO_WEB_READ / FU_SOLLFREQUENZ_WEB_READ).
 
-// Muss zu FU_FMAX_HZ in der GCF und zu P0.1.16 am Umrichter passen.
-export const FMAX_HZ = 50
+// Muss zu FU_FMAX_HZ in der GCF und zu P0.1.16/P0.1.18 am Umrichter passen.
+export const FMAX_HZ = 80
 
 export const MESSWERT_NODES = [
   { key: 'istFrequenz', nodeId: 'ns=1;s=FU1.IstFrequenz' },

@@ -24,7 +24,8 @@ erwarten, die Zwischenkreisspannung liegt im Leerlauf bei etwa 540–560 V.
 |---|---|---|
 | P0.1.06 | **2** | Betriebsbefehl über Kommunikation |
 | P0.1.09 | **9** | Frequenzquelle A = Kommunikation (Register 9301H) |
-| P0.1.16 | 50.00 | Maximalfrequenz. Muss zu `FU_FMAX_HZ`/`FU_SOLLWERT_FAKTOR` (GCF) und `FMAX_HZ` (Dashboard `src/h300.ts`) passen |
+| P0.1.16 | **80.00** | Maximalfrequenz (Werksdefault 50.00). Muss zu `FU_FMAX_HZ`/`FU_SOLLWERT_FAKTOR` (GCF) und `FMAX_HZ` (Dashboard `src/h300.ts`) passen |
+| P0.1.18 | **80.00** | Obere Grenzfrequenz (Werksdefault 50.00, Quelle P0.1.17 = 0). Ohne diesen Wert bleibt der Umrichter trotz P0.1.16 bei 50 Hz stehen |
 | P0.1.40 | 1 | Slave-Adresse (Werksdefault). Steht im Modbus-ID-String |
 | P2.8.00 | 3 | 9600 Baud (Werksdefault) |
 | P2.8.01 | 0 | 8-N-2 (Werksdefault, **2 Stoppbits**) |
@@ -89,4 +90,5 @@ Nach Aus-/Einschalten: P0.1.06/P0.1.09 bleiben erhalten, 9301H startet mit 0 Hz.
 | Alle Werte bleiben 0 | Gateway nicht im Modbus-TCP-Modus, falscher Port in der GCF (Test: `python tools/h300_modbus_test.py 192.168.1.200 4196 1 tcp`), falsche IP, oder Baud/Stoppbits passen nicht |
 | Werte kommen, Kommandos wirken nicht | P0.1.06 ≠ 2, oder der H300 lehnt Funktionscode 0x10 ab (siehe README „Offene Risiken“) |
 | Frequenz-Sollwert wirkt nicht | P0.1.09 ≠ 9, oder P0.1.16 passt nicht zu `FU_FMAX_HZ` |
+| Frequenz bleibt bei 50 Hz hängen | P0.1.18 (obere Grenzfrequenz) noch auf 50.00 |
 | Err47 am Umrichter | Kommunikationstimeout (P2.8.04). Polling läuft nicht: APIXON oder Netz prüfen |

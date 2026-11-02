@@ -48,8 +48,8 @@ EMB_RES;<Request ID="66" Action="WRITE"><Connection Source="TRUE" Destination="F
 EMB_RES;<Request ID="67" Action="WRITE"><Connection Source="&quot;modbus[tcp:192.168.1.200:4196:1:500::h37632]&quot;" Destination="FU_DemoApp.FU1.Kommando.Schreiben_Kommando.ID" /></Request>
 EMB_RES;<Request ID="68" Action="WRITE"><Connection Source="TRUE" Destination="FU_DemoApp.FU1.Sollwert.Abo_SollFrequenz.QI" /></Request>
 EMB_RES;<Request ID="69" Action="WRITE"><Connection Source="&quot;opc_ua[READ;/Objects/FU1/SollFrequenz,1:s=FU1.SollFrequenz]&quot;" Destination="FU_DemoApp.FU1.Sollwert.Abo_SollFrequenz.ID" /></Request>
-EMB_RES;<Request ID="70" Action="WRITE"><Connection Source="50.0" Destination="FU_DemoApp.FU1.Sollwert.Begrenzung.rMax" /></Request>
-EMB_RES;<Request ID="71" Action="WRITE"><Connection Source="REAL#200.0" Destination="FU_DemoApp.FU1.Sollwert.Hz_zu_Prozent.IN2" /></Request>
+EMB_RES;<Request ID="70" Action="WRITE"><Connection Source="80.0" Destination="FU_DemoApp.FU1.Sollwert.Begrenzung.rMax" /></Request>
+EMB_RES;<Request ID="71" Action="WRITE"><Connection Source="REAL#125.0" Destination="FU_DemoApp.FU1.Sollwert.Hz_zu_Prozent.IN2" /></Request>
 EMB_RES;<Request ID="72" Action="WRITE"><Connection Source="TRUE" Destination="FU_DemoApp.FU1.Sollwert.Schreiben_Sollwert.QI" /></Request>
 EMB_RES;<Request ID="73" Action="WRITE"><Connection Source="&quot;modbus[tcp:192.168.1.200:4196:1:500::h37633]&quot;" Destination="FU_DemoApp.FU1.Sollwert.Schreiben_Sollwert.ID" /></Request>
 EMB_RES;<Request ID="74" Action="WRITE"><Connection Source="DINT#100" Destination="FU_DemoApp.FU1.Ticker.System_Tick.F_MOD.IN2" /></Request>
