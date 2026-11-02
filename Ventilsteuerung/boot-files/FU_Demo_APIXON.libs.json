@@ -4,6 +4,56 @@
   "arch": "riscv32",
   "libs": [
     {
+      "name": "adapter_conversion",
+      "version": "3.0.0",
+      "file": "adapter_conversion-3.0.0-riscv32.elf",
+      "size": 800876,
+      "sha256": "ec822feb0c4ce9289874e3a348247a874d58cf815f67f4a0cc3a57bdab9ac014",
+      "requires": [
+        {
+          "name": "adapter_types",
+          "range": "^3.0"
+        },
+        {
+          "name": "iec61131-3",
+          "range": "^3.0"
+        }
+      ]
+    },
+    {
+      "name": "net_adapter",
+      "version": "3.0.0",
+      "file": "net_adapter-3.0.0-riscv32.elf",
+      "size": 315964,
+      "sha256": "4e5bcf6c69f28f4cc2b6f826f10402a1b413274be1a0675f8c3e3198b83b49b9",
+      "requires": [
+        {
+          "name": "adapter_types",
+          "range": "^3.0"
+        },
+        {
+          "name": "events",
+          "range": "^3.0"
+        },
+        {
+          "name": "iec61131-3",
+          "range": "^3.0"
+        },
+        {
+          "name": "iec61131-3-bool",
+          "range": "^3.0"
+        }
+      ]
+    },
+    {
+      "name": "init_stages",
+      "version": "1.0.0",
+      "file": "init_stages-1.0.0-riscv32.elf",
+      "size": 20908,
+      "sha256": "302a5fac62e8ac8268fb96c0d0c5970d5e640460a974259195e2d64b0a865eac",
+      "requires": []
+    },
+    {
       "name": "iec61131-3",
       "version": "3.0.1",
       "file": "iec61131-3-3.0.1-riscv32.elf",
@@ -97,10 +147,10 @@
   "files": [
     {
       "file": "FU_Demo_APIXON.fboot",
-      "size": 14575,
-      "sha256": "ee31b459f4e9f425fb1056c1dd0ea93da01d9826cdb67690db32dc774ac50e49"
+      "size": 18256,
+      "sha256": "d29c965450c5157eca1e2ef151990a5a446499a4f06e8dd58917764d6ddb312b"
     }
   ],
-  "manifest_sha256": "b04cbecd7b45bed72b0ebe2463dd75851bc9282f1f9406b66117f03b7722aded",
+  "manifest_sha256": "fb4e1e345ae7e9ca74b20f9ec2949286404e3ed0311eadea497ac08b77a4e949",
   "signature": null
 }
