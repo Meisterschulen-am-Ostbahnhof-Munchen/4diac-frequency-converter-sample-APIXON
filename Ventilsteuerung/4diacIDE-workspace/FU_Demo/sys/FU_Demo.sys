@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<System Name="FU_Demo">
+	<VersionInfo Version="1.0" Author="Franz Höpfinger" Date="2026-11-02">
+	</VersionInfo>
+	<CompilerInfo>
+		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::APIXON"/>
+	</CompilerInfo>
+	<Application Name="FU_DemoApp">
+		<SubAppNetwork>
+			<SubApp Name="FU1" Type="FBs::FU_Demo::FU_Demo_H300" x="1800" y="0">
+			</SubApp>
+		</SubAppNetwork>
+	</Application>
+	<Device Name="APIXON" Type="iec61499::system::FORTE_PC" x="4800" y="240">
+		<Parameter Name="MGR_ID" Value="APIXON" Comment="Device manager socket ID"/>
+		<Attribute Name="Profile" Type="STRING" Value="HOLOBLOC"/>
+		<Attribute Name="Color" Type="STRING" Value="255,190,111"/>
+		<Resource Name="EMB_RES" Type="iec61499::system::EMB_RES" x="0" y="0">
+			<FBNetwork>
+				<FB Name="E_TRIG" Type="iec61499::events::E_TRIG" x="2100" y="0">
+					<Parameter Name="EVENTTYPE" Value="'EInit'"/>
+				</FB>
+				<EventConnections>
+					<Connection Source="START.COLD" Destination="E_TRIG.REQ"/>
+				</EventConnections>
+			</FBNetwork>
+		</Resource>
+	</Device>
+	<Segment Name="Ethernet" Type="iec61499::system::Ethernet" x="4800" y="-640" dx1="4966.67">
+		<Attribute Name="Color" Type="STRING" Value="62,228,234"/>
+	</Segment>
+	<Mapping From="FU_DemoApp.FU1" To="APIXON.EMB_RES"/>
+	<Link SegmentName="Ethernet" CommResource="APIXON" Comment="">
+	</Link>
+</System>
