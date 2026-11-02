@@ -2,11 +2,14 @@
 <SubAppType Name="FU_Demo_H300" Comment="Ein DELIXI H300 (0,75 kW) per Modbus RTU hinter einem Waveshare RS232/485/422 TO POE ETH (B) (Modbus TCP&lt;-&gt;RTU, Port 502).&#10;Messwerte: der Modbus-Client pollt selbst alle 500 ms und meldet jede Abfrage per CNF; skalieren, auf den lokalen OPC-UA-Server publizieren.&#10;Kommando: Steuerwort vom Web-Dashboard -&gt; 9300H (genau ein Write je Dashboard-Klick).&#10;Sollwert: Sollfrequenz in Hz vom Web-Dashboard -&gt; begrenzen -&gt; % von Fmax -&gt; 9301H.&#10;Nur Standard-/logiBUS-Typen, die auf der APIXON bereits als ELF-Lib vorhanden sind - kein eigener FB-Typ, kein Firmware-Build noetig.">
 	<Identification Standard="61499-2" Description="Copyright (c) 2026 Franz Höpfinger &#10; &#10;This program and the accompanying materials are made &#10;available under the terms of the Eclipse Public License 2.0 &#10;which is available at https://www.eclipse.org/legal/epl-2.0/ &#10; &#10;SPDX-License-Identifier: EPL-2.0">
 	</Identification>
+	<VersionInfo Organization="Franz Höpfinger" Version="1.2" Author="Franz Höpfinger" Date="2026-11-02" Remarks="Ticker (MyLib::sys::SystemTickSender_OPC): Lebenszeichen FU1.SYSTEM_TICK fuer das Dashboard.">
+	</VersionInfo>
 	<VersionInfo Organization="Franz Höpfinger" Version="1.1" Author="Franz Höpfinger" Date="2026-11-02" Remarks="in drei SubApps aufgeteilt (FU_Messwerte, FU_Kommando, FU_Sollwert), E_CYCLE entfernt">
 	</VersionInfo>
 	<VersionInfo Organization="Franz Höpfinger" Version="1.0" Author="Franz Höpfinger" Date="2026-11-02" Remarks="initial">
 	</VersionInfo>
 	<CompilerInfo packageName="FBs::FU_Demo">
+		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SYSTEM_TICK_WEB_WRITE"/>
 	</CompilerInfo>
 	<SubAppInterfaceList>
 	</SubAppInterfaceList>
@@ -16,6 +19,9 @@
 		<SubApp Name="Kommando" Type="FBs::FU_Demo::FU_Kommando" x="0" y="300">
 		</SubApp>
 		<SubApp Name="Sollwert" Type="FBs::FU_Demo::FU_Sollwert" x="0" y="600">
+		</SubApp>
+		<SubApp Name="Ticker" Type="MyLib::sys::SystemTickSender_OPC" Comment="Lebenszeichen fuer das Web-Dashboard" x="0" y="900">
+			<Parameter Name="ID_WRITE" Value="FU_SYSTEM_TICK_WEB_WRITE"/>
 		</SubApp>
 	</SubAppNetwork>
 </SubAppType>

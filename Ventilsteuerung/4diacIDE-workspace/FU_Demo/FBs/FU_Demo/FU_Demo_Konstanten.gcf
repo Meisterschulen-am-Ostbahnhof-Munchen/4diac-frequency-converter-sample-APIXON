@@ -2,6 +2,8 @@
 <GlobalConstants Name="FU_Demo_Konstanten" Comment="Adressen der FU-Demo: Modbus-TCP-Verbindungen (APIXON -&gt; Waveshare RS232/485/422 TO POE ETH (B) -&gt; DELIXI H300 0,75 kW) und lokale OPC-UA-Knoten fuer das Web-Dashboard. Alle Adressen, IPs und Skalierungen nur hier aendern.">
 	<Identification Standard="61499-1" Description="Copyright (c) 2026 Franz Höpfinger &#10; &#10;This program and the accompanying materials are made &#10;available under the terms of the Eclipse Public License 2.0 &#10;which is available at https://www.eclipse.org/legal/epl-2.0/ &#10; &#10;SPDX-License-Identifier: EPL-2.0">
 	</Identification>
+	<VersionInfo Organization="Franz Höpfinger" Version="1.1" Author="Franz Höpfinger" Date="2026-11-02" Remarks="FU_SYSTEM_TICK_WEB_WRITE (Lebenszeichen fuer das Dashboard).">
+	</VersionInfo>
 	<VersionInfo Organization="Franz Höpfinger" Version="1.0" Author="Franz Höpfinger" Date="2026-11-02" Remarks="initial - ein H300 an einem Waveshare-Gateway, Register laut H300-Handbuch Kap. 9.1 / 9.2.9.">
 	</VersionInfo>
 	<CompilerInfo packageName="FBs::FU_Demo">
@@ -19,6 +21,7 @@
 		<VarDeclaration Name="FU_MESSWERTE_WEB_WRITE" Type="WSTRING" Comment="PUBLISH_8 auf den lokalen OPC-UA-Server, vom Web-Dashboard abonniert. Reihenfolge = SD_1..SD_8." InitialValue="&quot;opc_ua[WRITE;/Objects/FU1/IstFrequenz,1:s=FU1.IstFrequenz;/Objects/FU1/SollFrequenzAktiv,1:s=FU1.SollFrequenzAktiv;/Objects/FU1/Strom,1:s=FU1.Strom;/Objects/FU1/Ausgangsspannung,1:s=FU1.Ausgangsspannung;/Objects/FU1/Zwischenkreisspannung,1:s=FU1.Zwischenkreisspannung;/Objects/FU1/Leistung,1:s=FU1.Leistung;/Objects/FU1/Status,1:s=FU1.Status;/Objects/FU1/Fehlercode,1:s=FU1.Fehlercode]&quot;"/>
 		<VarDeclaration Name="FU_KOMMANDO_WEB_READ" Type="WSTRING" Comment="Steuerwort vom Web-Dashboard (UInt16, Werte siehe FU_MODBUS_KOMMANDO). Jeder Schreibzugriff des" InitialValue="&quot;opc_ua[READ;/Objects/FU1/Kommando,1:s=FU1.Kommando]&quot;"/>
 		<VarDeclaration Name="FU_SOLLFREQUENZ_WEB_READ" Type="WSTRING" Comment="Sollfrequenz in Hz vom Web-Dashboard (Float), wird auf 0..FU_FMAX_HZ begrenzt" InitialValue="&quot;opc_ua[READ;/Objects/FU1/SollFrequenz,1:s=FU1.SollFrequenz]&quot;"/>
+		<VarDeclaration Name="FU_SYSTEM_TICK_WEB_WRITE" Type="WSTRING" Comment="Lebenszeichen 0..99 alle 200 ms fuer das Web-Dashboard" InitialValue="&quot;opc_ua[WRITE;/Objects/FU1/System/Tick,1:s=FU1.SYSTEM_TICK]&quot;"/>
 	</GlobalConstants>
 	<OriginalSource><![CDATA[PACKAGE FBs::FU_Demo;
 
@@ -46,6 +49,7 @@ GLOBALCONSTANTS FU_Demo_Konstanten
 		FU_KOMMANDO_WEB_READ : WSTRING := "opc_ua[READ;/Objects/FU1/Kommando,1:s=FU1.Kommando]"; // Steuerwort vom Web-Dashboard (UInt16, Werte siehe FU_MODBUS_KOMMANDO). Jeder Schreibzugriff des
 		                                                                                         // Dashboards loest genau einen Modbus-Write aus - kein zyklisches Nachsenden.
 		FU_SOLLFREQUENZ_WEB_READ : WSTRING := "opc_ua[READ;/Objects/FU1/SollFrequenz,1:s=FU1.SollFrequenz]"; // Sollfrequenz in Hz vom Web-Dashboard (Float), wird auf 0..FU_FMAX_HZ begrenzt
+		FU_SYSTEM_TICK_WEB_WRITE : WSTRING := "opc_ua[WRITE;/Objects/FU1/System/Tick,1:s=FU1.SYSTEM_TICK]"; // Lebenszeichen 0..99 alle 200 ms fuer das Web-Dashboard
 	END_VAR
 END_GLOBALCONSTANTS
 ]]></OriginalSource>
