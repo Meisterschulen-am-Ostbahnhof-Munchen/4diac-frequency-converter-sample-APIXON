@@ -1,127 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SubAppType Name="FU_Demo_H300" Comment="Ein DELIXI H300 (0,75 kW) per Modbus RTU hinter einem Waveshare RS232/485/422 TO POE ETH (B) (Modbus TCP&lt;-&gt;RTU, Port 502).&#10;Zeile 1: zyklisch lesen (500 ms), skalieren, auf den lokalen OPC-UA-Server publizieren.&#10;Zeile 2: Steuerwort vom Web-Dashboard -&gt; 9300H (genau ein Write je Dashboard-Klick).&#10;Zeile 3: Sollfrequenz in Hz vom Web-Dashboard -&gt; begrenzen -&gt; % von Fmax -&gt; 9301H.&#10;Nur Standard-/logiBUS-Typen, die auf der APIXON bereits als ELF-Lib vorhanden sind - kein eigener FB-Typ, kein Firmware-Build noetig.">
+<SubAppType Name="FU_Demo_H300" Comment="Ein DELIXI H300 (0,75 kW) per Modbus RTU hinter einem Waveshare RS232/485/422 TO POE ETH (B) (Modbus TCP&lt;-&gt;RTU, Port 502).&#10;Messwerte: der Modbus-Client pollt selbst alle 500 ms und meldet jede Abfrage per CNF; skalieren, auf den lokalen OPC-UA-Server publizieren.&#10;Kommando: Steuerwort vom Web-Dashboard -&gt; 9300H (genau ein Write je Dashboard-Klick).&#10;Sollwert: Sollfrequenz in Hz vom Web-Dashboard -&gt; begrenzen -&gt; % von Fmax -&gt; 9301H.&#10;Nur Standard-/logiBUS-Typen, die auf der APIXON bereits als ELF-Lib vorhanden sind - kein eigener FB-Typ, kein Firmware-Build noetig.">
 	<Identification Standard="61499-2" Description="Copyright (c) 2026 Franz Höpfinger &#10; &#10;This program and the accompanying materials are made &#10;available under the terms of the Eclipse Public License 2.0 &#10;which is available at https://www.eclipse.org/legal/epl-2.0/ &#10; &#10;SPDX-License-Identifier: EPL-2.0">
 	</Identification>
+	<VersionInfo Organization="Franz Höpfinger" Version="1.1" Author="Franz Höpfinger" Date="2026-11-02" Remarks="in drei SubApps aufgeteilt (FU_Messwerte, FU_Kommando, FU_Sollwert), E_CYCLE entfernt">
+	</VersionInfo>
 	<VersionInfo Organization="Franz Höpfinger" Version="1.0" Author="Franz Höpfinger" Date="2026-11-02" Remarks="initial">
 	</VersionInfo>
 	<CompilerInfo packageName="FBs::FU_Demo">
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_MODBUS_LESEN"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_MODBUS_KOMMANDO"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_MODBUS_SOLLWERT"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_FMAX_HZ"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SOLLWERT_FAKTOR"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SKALIERUNG_0_01"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SKALIERUNG_0_1"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SKALIERUNG_1"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_MESSWERTE_WEB_WRITE"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_KOMMANDO_WEB_READ"/>
-		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SOLLFREQUENZ_WEB_READ"/>
 	</CompilerInfo>
 	<SubAppInterfaceList>
 	</SubAppInterfaceList>
 	<SubAppNetwork>
-		<FB Name="Zyklus" Type="iec61499::events::E_CYCLE" Comment="Lesetakt; gestartet, sobald der Modbus-Client initialisiert ist" x="-2400" y="0">
-			<Parameter Name="DT" Value="T#500ms"/>
-		</FB>
-		<FB Name="Lesen" Type="iec61499::net::CLIENT_0_8" Comment="9000H..9004H, 9006H, 9332H, 9333H" x="-1200" y="0">
-			<Parameter Name="QI" Value="TRUE"/>
-			<Parameter Name="ID" Value="FU_MODBUS_LESEN"/>
-		</FB>
-		<FB Name="IstFrequenz" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9000H, 0,01 Hz" x="800" y="-1200">
-			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_01"/>
-		</FB>
-		<FB Name="SollFrequenzAktiv" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9001H, 0,01 Hz - der vom FU tatsaechlich verwendete Sollwert" x="800" y="-600">
-			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_01"/>
-		</FB>
-		<FB Name="Strom" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9002H, 0,01 A (Geraete &lt; 75 kW)" x="800" y="0">
-			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_01"/>
-		</FB>
-		<FB Name="Ausgangsspannung" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9003H, 1 V" x="800" y="600">
-			<Parameter Name="SCALE" Value="FU_SKALIERUNG_1"/>
-		</FB>
-		<FB Name="Zwischenkreisspannung" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9004H, 0,1 V" x="800" y="1200">
-			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_1"/>
-		</FB>
-		<FB Name="Leistung" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9006H, 0,1 kW" x="800" y="1800">
-			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_1"/>
-		</FB>
-		<FB Name="Status" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL" Comment="9332H: 1=Vorwaerts, 2=Rueckwaerts, 3=Stopp" x="800" y="2400">
-		</FB>
-		<FB Name="Fehlercode" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL" Comment="9333H: 0=keine Stoerung, sonst Fehlercode lt. Handbuch 9.1.5.1" x="800" y="3000">
-		</FB>
-		<FB Name="Publish_Messwerte" Type="iec61499::net::PUBLISH_8" x="2800" y="0">
-			<Parameter Name="QI" Value="TRUE"/>
-			<Parameter Name="ID" Value="FU_MESSWERTE_WEB_WRITE"/>
-		</FB>
-		<FB Name="Abo_Kommando" Type="iec61499::net::SUBSCRIBE_1" x="-2400" y="4000">
-			<Parameter Name="QI" Value="TRUE"/>
-			<Parameter Name="ID" Value="FU_KOMMANDO_WEB_READ"/>
-		</FB>
-		<FB Name="Kommando_WORD" Type="iec61131::conversion::F_UINT_TO_WORD" Comment="typisiert die ANY-Pins: OPC-UA-Knoten wird UInt16, Modbus-Wert WORD" x="-800" y="4000">
-		</FB>
-		<FB Name="Schreiben_Kommando" Type="iec61499::net::CLIENT_1_0" Comment="9300H Steuerwort" x="800" y="4000">
-			<Parameter Name="QI" Value="TRUE"/>
-			<Parameter Name="ID" Value="FU_MODBUS_KOMMANDO"/>
-		</FB>
-		<FB Name="Abo_SollFrequenz" Type="iec61499::net::SUBSCRIBE_1" x="-2400" y="5200">
-			<Parameter Name="QI" Value="TRUE"/>
-			<Parameter Name="ID" Value="FU_SOLLFREQUENZ_WEB_READ"/>
-		</FB>
-		<FB Name="Begrenzung" Type="logiBUS::signalprocessing::clamp::F_ClampReal" Comment="0 .. Fmax Hz; typisiert den OPC-UA-Knoten als Float" x="-800" y="5200">
-			<Parameter Name="rMin" Value="0.0"/>
-			<Parameter Name="rMax" Value="FU_FMAX_HZ"/>
-		</FB>
-		<FB Name="Hz_zu_Prozent" Type="iec61131::arithmetic::F_MUL" Comment="Hz * 10000 / Fmax = Registerwert 9301H (0..10000)" x="400" y="5200">
-			<Parameter Name="IN2" Value="FU_SOLLWERT_FAKTOR"/>
-		</FB>
-		<FB Name="Sollwert_UINT" Type="iec61131::conversion::F_REAL_TO_UINT" x="1600" y="5200">
-		</FB>
-		<FB Name="Schreiben_Sollwert" Type="iec61499::net::CLIENT_1_0" Comment="9301H Frequenzsollwert" x="2800" y="5200">
-			<Parameter Name="QI" Value="TRUE"/>
-			<Parameter Name="ID" Value="FU_MODBUS_SOLLWERT"/>
-		</FB>
-		<EventConnections>
-			<Connection Source="Lesen.INITO" Destination="Zyklus.START" dx1="200" dx2="200" dy="-400"/>
-			<Connection Source="Zyklus.EO" Destination="Lesen.REQ"/>
-			<Connection Source="Lesen.CNF" Destination="IstFrequenz.REQ"/>
-			<Connection Source="IstFrequenz.CNF" Destination="SollFrequenzAktiv.REQ"/>
-			<Connection Source="SollFrequenzAktiv.CNF" Destination="Strom.REQ"/>
-			<Connection Source="Strom.CNF" Destination="Ausgangsspannung.REQ"/>
-			<Connection Source="Ausgangsspannung.CNF" Destination="Zwischenkreisspannung.REQ"/>
-			<Connection Source="Zwischenkreisspannung.CNF" Destination="Leistung.REQ"/>
-			<Connection Source="Leistung.CNF" Destination="Status.REQ"/>
-			<Connection Source="Status.CNF" Destination="Fehlercode.REQ"/>
-			<Connection Source="Fehlercode.CNF" Destination="Publish_Messwerte.REQ"/>
-			<Connection Source="Abo_Kommando.IND" Destination="Kommando_WORD.REQ"/>
-			<Connection Source="Kommando_WORD.CNF" Destination="Schreiben_Kommando.REQ"/>
-			<Connection Source="Abo_SollFrequenz.IND" Destination="Begrenzung.REQ"/>
-			<Connection Source="Begrenzung.CNF" Destination="Hz_zu_Prozent.REQ"/>
-			<Connection Source="Hz_zu_Prozent.CNF" Destination="Sollwert_UINT.REQ"/>
-			<Connection Source="Sollwert_UINT.CNF" Destination="Schreiben_Sollwert.REQ"/>
-		</EventConnections>
-		<DataConnections>
-			<Connection Source="Lesen.RD_1" Destination="IstFrequenz.IN"/>
-			<Connection Source="Lesen.RD_2" Destination="SollFrequenzAktiv.IN"/>
-			<Connection Source="Lesen.RD_3" Destination="Strom.IN"/>
-			<Connection Source="Lesen.RD_4" Destination="Ausgangsspannung.IN"/>
-			<Connection Source="Lesen.RD_5" Destination="Zwischenkreisspannung.IN"/>
-			<Connection Source="Lesen.RD_6" Destination="Leistung.IN"/>
-			<Connection Source="Lesen.RD_7" Destination="Status.IN"/>
-			<Connection Source="Lesen.RD_8" Destination="Fehlercode.IN"/>
-			<Connection Source="IstFrequenz.OUT" Destination="Publish_Messwerte.SD_1"/>
-			<Connection Source="SollFrequenzAktiv.OUT" Destination="Publish_Messwerte.SD_2"/>
-			<Connection Source="Strom.OUT" Destination="Publish_Messwerte.SD_3"/>
-			<Connection Source="Ausgangsspannung.OUT" Destination="Publish_Messwerte.SD_4"/>
-			<Connection Source="Zwischenkreisspannung.OUT" Destination="Publish_Messwerte.SD_5"/>
-			<Connection Source="Leistung.OUT" Destination="Publish_Messwerte.SD_6"/>
-			<Connection Source="Status.OUT" Destination="Publish_Messwerte.SD_7"/>
-			<Connection Source="Fehlercode.OUT" Destination="Publish_Messwerte.SD_8"/>
-			<Connection Source="Abo_Kommando.RD_1" Destination="Kommando_WORD.IN"/>
-			<Connection Source="Kommando_WORD.OUT" Destination="Schreiben_Kommando.SD_1"/>
-			<Connection Source="Abo_SollFrequenz.RD_1" Destination="Begrenzung.rIn"/>
-			<Connection Source="Begrenzung." Destination="Hz_zu_Prozent.IN1"/>
-			<Connection Source="Hz_zu_Prozent.OUT" Destination="Sollwert_UINT.IN"/>
-			<Connection Source="Sollwert_UINT.OUT" Destination="Schreiben_Sollwert.SD_1"/>
-		</DataConnections>
+		<SubApp Name="Messwerte" Type="FBs::FU_Demo::FU_Messwerte" x="0" y="0">
+		</SubApp>
+		<SubApp Name="Kommando" Type="FBs::FU_Demo::FU_Kommando" x="0" y="300">
+		</SubApp>
+		<SubApp Name="Sollwert" Type="FBs::FU_Demo::FU_Sollwert" x="0" y="600">
+		</SubApp>
 	</SubAppNetwork>
 </SubAppType>

@@ -25,9 +25,11 @@ Handbücher) und `Krauternter` (APIXON-Deploy, OPC-UA-Dashboard-Muster).
 
 | Pfad | Was |
 |---|---|
-| `Ventilsteuerung/4diacIDE-workspace/FU_Demo/` | 4diac-Projekt: System `FU_Demo.sys`, SubApp `FU_Demo_H300.SUB`, alle Adressen in `FU_Demo_Konstanten.gcf` |
+| `Ventilsteuerung/4diacIDE-workspace/FU_Demo/` | 4diac-Projekt: System `FU_Demo.sys`, SubApp `FU_Demo_H300.SUB` mit den drei SubApps `FU_Messwerte` (darin `FU_Skalierung`), `FU_Kommando`, `FU_Sollwert`; alle Adressen in `FU_Demo_Konstanten.gcf` |
+| `Ventilsteuerung/APIXON/ethernet.ini` | Feste IP 192.168.1.11 für die APIXON (→ `/data/ethernet.ini`) |
 | `Ventilsteuerung/4diacIDE-workspace/.lib/` | Benötigte Bibliotheken 3.0.x inkl. riscv32/xtensa-ELFs (aus Krauternter übernommen) |
 | `Ventilsteuerung/Web-Clients/opcua-dashboard/` | Vue-3-Dashboard (`@wsopcua`). `dist/fu-demo-dashboard.html` ist eine einzelne Datei |
+| **`docs/SICHERHEIT_Offene_Punkte.md`** | **Vor jeder Vorführung lesen:** Motor läuft weiter, wenn das Dashboard wegfällt; STOP-Taste und Not-Halt noch offen |
 | `docs/Inbetriebnahme.md` | Verdrahtung, H300-Parameter, Gateway-Einstellungen, Fehlersuche |
 
 ## Die 4diac-Applikation
@@ -36,14 +38,15 @@ Sie verwendet bewusst **nur Typen, die auf der APIXON schon als ELF-Lib oder in
 der Firmware vorhanden sind**. Es gibt keinen eigenen FB-Typ, also auch keinen
 Lib-Build für riscv32.
 
-1. **Lesen** – `E_CYCLE` (500 ms) → `CLIENT_0_8` (9000H–9004H, 9006H, 9332H,
-   9333H) → `FIELDBUS_UINT_TO_SIGNAL_SCALED` je Messwert → `PUBLISH_8` auf den
+1. **Lesen** (`FU_Messwerte`) – `CLIENT_0_8` (9000H–9004H, 9006H, 9332H, 9333H) pollt selbst
+   alle 500 ms und löst nach jeder erfolgreichen Abfrage `CNF` aus (kein `REQ`,
+   kein `E_CYCLE`) → SubApp `FU_Skalierung` (`FIELDBUS_UINT_TO_SIGNAL_SCALED` je Messwert) → `PUBLISH_8` auf den
    lokalen OPC-UA-Server.
-2. **Kommando** – `SUBSCRIBE_1` (`FU1.Kommando`, UInt16) → `F_UINT_TO_WORD` →
+2. **Kommando** (`FU_Kommando`) – `SUBSCRIBE_1` (`FU1.Kommando`, UInt16) → `F_UINT_TO_WORD` →
    `CLIENT_1_0` auf 9300H. Ein Dashboard-Klick erzeugt genau einen Modbus-Write.
    Es gibt kein zyklisches Nachsenden: Nach einem Fehler oder einem Stopp am
    Bedienteil läuft der Antrieb erst wieder, wenn jemand bewusst „Vorwärts“ drückt.
-3. **Sollwert** – `SUBSCRIBE_1` (`FU1.SollFrequenz`, Float, Hz) →
+3. **Sollwert** (`FU_Sollwert`) – `SUBSCRIBE_1` (`FU1.SollFrequenz`, Float, Hz) →
    `F_ClampReal` (0…Fmax) → `F_MUL` (×10000/Fmax) → `F_REAL_TO_UINT` →
    `CLIENT_1_0` auf 9301H (RAM, kein EEPROM-Verschleiß).
 

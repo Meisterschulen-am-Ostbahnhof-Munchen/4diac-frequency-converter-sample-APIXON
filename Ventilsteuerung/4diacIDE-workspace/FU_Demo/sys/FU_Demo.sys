@@ -17,11 +17,11 @@
 		<Attribute Name="Color" Type="STRING" Value="255,190,111"/>
 		<Resource Name="EMB_RES" Type="iec61499::system::EMB_RES" x="0" y="0">
 			<FBNetwork>
-				<FB Name="E_TRIG" Type="iec61499::events::E_TRIG" x="2100" y="0">
+				<FB Name="E_TRIG" Type="iec61499::events::E_TRIG" x="1800" y="700">
 					<Parameter Name="EVENTTYPE" Value="'EInit'"/>
 				</FB>
 				<EventConnections>
-					<Connection Source="START.COLD" Destination="E_TRIG.REQ"/>
+					<Connection Source="START.COLD" Destination="E_TRIG.REQ" dx1="493.33"/>
 				</EventConnections>
 			</FBNetwork>
 		</Resource>

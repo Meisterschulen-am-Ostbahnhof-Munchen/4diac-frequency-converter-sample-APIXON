@@ -30,7 +30,7 @@ erwarten, die Zwischenkreisspannung liegt im Leerlauf bei etwa 540–560 V.
 | P2.8.01 | 0 | 8-N-2 (Werksdefault, **2 Stoppbits**) |
 | P2.8.05 | 1 | RTU |
 | P2.8.06 | 0 | Antwort senden |
-| P2.8.04 / P2.8.07 | 5,0 s / 2 | Optional: Err47, wenn länger als 5 s keine Anfrage kommt. Bei 500-ms-Polling ist das ein Watchdog gegen ausgefallene SPS oder Netz |
+| P2.8.04 / P2.8.07 | 5,0 s / **1** | **Pflicht (Kommunikations-Watchdog):** Err47, wenn länger als 5 s keine Anfrage kommt, Motor stoppt. Wert 1 = Fehler bleibt bis zur Quittierung stehen. Am Demo-Umrichter am 2026-11-02 gesetzt und getestet. Err47 kommt auch im Stillstand, also nach jedem Start der APIXON einmal im Dashboard quittieren |
 
 Motordaten (P1.0.x) vom Motor-Typenschild eintragen. Nennstrom höchstens 3,0 A (G-Typ),
 damit der Motorschutz des Umrichters passt.
@@ -52,6 +52,11 @@ Werks-IP ist laut Waveshare-Wiki `192.168.1.200`. Weboberfläche oder VirCom:
 Schnelltest vom PC: `python tools/h300_modbus_test.py 192.168.1.200 4196 1 tcp` (liest nur). Alternativ mit `mbpoll` oder Modbus Poll: Holding Register **36864** (= 9000H) lesen, Slave 1. Im Stillstand kommt 0 zurück, im Lauf die Frequenz × 100.
 
 ## 4. APIXON / 4diac
+
+**Feste IP:** `Ventilsteuerung/APIXON/ethernet.ini` als `/data/ethernet.ini` auf die APIXON
+legen und neu starten (Abschnitt `ETH_INT`, `DHCP_CLIENT = 0`, IP 192.168.1.11). Ohne diese Datei
+nutzt die Firmware DHCP und fällt ohne DHCP-Server auf eine 169.254.x.x-Adresse zurück.
+
 
 1. 4diac IDE (3.4, wie Krauternter) mit Workspace `Ventilsteuerung/4diacIDE-workspace` starten und das Projekt `FU_Demo` importieren.
 2. In `FU_Demo_Konstanten.gcf` die IP der APIXON (`APIXON`) und die des Gateways prüfen.

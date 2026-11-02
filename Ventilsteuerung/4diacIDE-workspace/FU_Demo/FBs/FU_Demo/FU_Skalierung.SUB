@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SubAppType Name="FU_Skalierung" Comment="H300-Rohwerte (UINT-Register) in physikalische Werte umrechnen. RD_n = Reihenfolge des CLIENT_0_8 in FU_Messwerte, SD_n = Reihenfolge des PUBLISH_8.&#10;Die festen Schnittstellentypen (UINT rein, REAL/UINT raus) typisieren die ANY-Pins von CLIENT und PUBLISH.">
+	<Identification Standard="61499-2" Description="Copyright (c) 2026 Franz Höpfinger &#10; &#10;This program and the accompanying materials are made &#10;available under the terms of the Eclipse Public License 2.0 &#10;which is available at https://www.eclipse.org/legal/epl-2.0/ &#10; &#10;SPDX-License-Identifier: EPL-2.0">
+	</Identification>
+	<VersionInfo Organization="Franz Höpfinger" Version="1.0" Author="Franz Höpfinger" Date="2026-11-02" Remarks="aus FU_Messwerte herausgeloest">
+	</VersionInfo>
+	<CompilerInfo packageName="FBs::FU_Demo">
+		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SKALIERUNG_0_01"/>
+		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SKALIERUNG_0_1"/>
+		<Import declaration="FBs::FU_Demo::FU_Demo_Konstanten::FU_SKALIERUNG_1"/>
+	</CompilerInfo>
+	<SubAppInterfaceList>
+		<SubAppEventInputs>
+			<SubAppEvent Name="REQ" Type="Event" Comment="Neue Rohwerte (von CLIENT_0_8.CNF)">
+			</SubAppEvent>
+		</SubAppEventInputs>
+		<SubAppEventOutputs>
+			<SubAppEvent Name="CNF" Type="Event" Comment="Alle Werte umgerechnet">
+			</SubAppEvent>
+		</SubAppEventOutputs>
+		<InputVars>
+			<VarDeclaration Name="RD_1" Type="UINT" Comment="Rohwert 9000H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_2" Type="UINT" Comment="Rohwert 9001H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_3" Type="UINT" Comment="Rohwert 9002H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_4" Type="UINT" Comment="Rohwert 9003H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_5" Type="UINT" Comment="Rohwert 9004H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_6" Type="UINT" Comment="Rohwert 9006H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_7" Type="UINT" Comment="Rohwert 9332H vom Modbus-Client"/>
+			<VarDeclaration Name="RD_8" Type="UINT" Comment="Rohwert 9333H vom Modbus-Client"/>
+		</InputVars>
+		<OutputVars>
+			<VarDeclaration Name="SD_1" Type="REAL" Comment="Ist-Frequenz in Hz (9000H)"/>
+			<VarDeclaration Name="SD_2" Type="REAL" Comment="wirksame Soll-Frequenz in Hz (9001H)"/>
+			<VarDeclaration Name="SD_3" Type="REAL" Comment="Ausgangsstrom in A (9002H)"/>
+			<VarDeclaration Name="SD_4" Type="REAL" Comment="Ausgangsspannung in V (9003H)"/>
+			<VarDeclaration Name="SD_5" Type="REAL" Comment="Zwischenkreisspannung in V (9004H)"/>
+			<VarDeclaration Name="SD_6" Type="REAL" Comment="Ausgangsleistung in kW (9006H)"/>
+			<VarDeclaration Name="SD_7" Type="UINT" Comment="Betriebsstatus (9332H): 1=vorwaerts, 2=rueckwaerts, 3=Stopp"/>
+			<VarDeclaration Name="SD_8" Type="UINT" Comment="Fehlercode (9333H): 0=keine Stoerung"/>
+		</OutputVars>
+	</SubAppInterfaceList>
+	<SubAppNetwork>
+		<FB Name="IstFrequenz" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9000H, 0,01 Hz" x="800" y="-2200">
+			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_01"/>
+		</FB>
+		<FB Name="SollFrequenzAktiv" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9001H, 0,01 Hz - der vom FU tatsaechlich verwendete Sollwert" x="800" y="-1300">
+			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_01"/>
+		</FB>
+		<FB Name="Strom" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9002H, 0,01 A (Geraete &lt; 75 kW)" x="800" y="-400">
+			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_01"/>
+		</FB>
+		<FB Name="Ausgangsspannung" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9003H, 1 V" x="800" y="500">
+			<Parameter Name="SCALE" Value="FU_SKALIERUNG_1"/>
+		</FB>
+		<FB Name="Zwischenkreisspannung" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9004H, 0,1 V" x="800" y="1400">
+			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_1"/>
+		</FB>
+		<FB Name="Leistung" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL_SCALED" Comment="9006H, 0,1 kW" x="800" y="2300">
+			<Parameter Name="SCALE" Value="FU_SKALIERUNG_0_1"/>
+		</FB>
+		<FB Name="Status" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL" Comment="9332H: 1=Vorwaerts, 2=Rueckwaerts, 3=Stopp" x="800" y="3200">
+		</FB>
+		<FB Name="Fehlercode" Type="logiBUS::signalprocessing::fieldbus::FIELDBUS_UINT_TO_SIGNAL" Comment="9333H: 0=keine Stoerung, sonst Fehlercode lt. Handbuch 9.1.5.1" x="800" y="4000">
+		</FB>
+		<EventConnections>
+			<Connection Source="REQ" Destination="IstFrequenz.REQ"/>
+			<Connection Source="IstFrequenz.CNF" Destination="SollFrequenzAktiv.REQ"/>
+			<Connection Source="SollFrequenzAktiv.CNF" Destination="Strom.REQ"/>
+			<Connection Source="Strom.CNF" Destination="Ausgangsspannung.REQ"/>
+			<Connection Source="Ausgangsspannung.CNF" Destination="Zwischenkreisspannung.REQ"/>
+			<Connection Source="Zwischenkreisspannung.CNF" Destination="Leistung.REQ"/>
+			<Connection Source="Leistung.CNF" Destination="Status.REQ"/>
+			<Connection Source="Status.CNF" Destination="Fehlercode.REQ"/>
+			<Connection Source="Fehlercode.CNF" Destination="CNF"/>
+		</EventConnections>
+		<DataConnections>
+			<Connection Source="RD_1" Destination="IstFrequenz.IN"/>
+			<Connection Source="RD_2" Destination="SollFrequenzAktiv.IN"/>
+			<Connection Source="RD_3" Destination="Strom.IN"/>
+			<Connection Source="RD_4" Destination="Ausgangsspannung.IN"/>
+			<Connection Source="RD_5" Destination="Zwischenkreisspannung.IN"/>
+			<Connection Source="RD_6" Destination="Leistung.IN"/>
+			<Connection Source="RD_7" Destination="Status.IN"/>
+			<Connection Source="RD_8" Destination="Fehlercode.IN"/>
+			<Connection Source="IstFrequenz.OUT" Destination="SD_1"/>
+			<Connection Source="SollFrequenzAktiv.OUT" Destination="SD_2"/>
+			<Connection Source="Strom.OUT" Destination="SD_3"/>
+			<Connection Source="Ausgangsspannung.OUT" Destination="SD_4"/>
+			<Connection Source="Zwischenkreisspannung.OUT" Destination="SD_5"/>
+			<Connection Source="Leistung.OUT" Destination="SD_6"/>
+			<Connection Source="Status.OUT" Destination="SD_7"/>
+			<Connection Source="Fehlercode.OUT" Destination="SD_8"/>
+		</DataConnections>
+	</SubAppNetwork>
+</SubAppType>
