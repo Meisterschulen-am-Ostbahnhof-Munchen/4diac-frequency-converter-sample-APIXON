@@ -56,7 +56,9 @@
           <span>Verlauf 60 s</span>
           <span class="legende"><i class="f"></i>Frequenz (0&ndash;{{ FMAX_HZ }} Hz) <i class="a"></i>Strom (auto)</span>
         </div>
-        <canvas ref="trendCanvas" width="860" height="160"></canvas>
+        <div class="trend-flaeche">
+          <canvas ref="trendCanvas" width="860" height="160"></canvas>
+        </div>
       </section>
 
       <section class="bedienung">
@@ -363,6 +365,14 @@ function zeichneTrend() {
   const canvas = trendCanvas.value
   const ctx = canvas?.getContext('2d')
   if (!canvas || !ctx) return
+  // Zeichenflaeche wird per CSS gestreckt (fuellt im Tablet-Layout die Resthoehe):
+  // Pixelaufloesung an die tatsaechliche Groesse anpassen, sonst verzerrte Linien
+  const breite = Math.round(canvas.clientWidth)
+  const hoehe = Math.round(canvas.clientHeight)
+  if (breite > 0 && hoehe > 0 && (canvas.width !== breite || canvas.height !== hoehe)) {
+    canvas.width = breite
+    canvas.height = hoehe
+  }
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.strokeStyle = '#2a3a5e'
   ctx.lineWidth = 1
@@ -512,7 +522,8 @@ section { background: #16213e; border-radius: 8px; padding: 0.75rem; margin-bott
 .legende i { display: inline-block; width: 12px; height: 3px; margin: 0 0.3rem 0.2rem 0.6rem; vertical-align: middle; }
 .legende i.f { background: #4fc3f7; }
 .legende i.a { background: #ffb74d; }
-canvas { width: 100%; height: 160px; background: #0f1629; border-radius: 4px; }
+.trend-flaeche { position: relative; height: 160px; }
+.trend-flaeche canvas { position: absolute; inset: 0; width: 100%; height: 100%; background: #0f1629; border-radius: 4px; }
 
 .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .soll { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
@@ -528,6 +539,10 @@ canvas { width: 100%; height: 160px; background: #0f1629; border-radius: 4px; }
 @media (min-width: 1000px) {
   .unten { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; align-items: stretch; }
   .unten section { margin-bottom: 0; }
-  .trend canvas { height: 200px; }
+  /* Seite fuellt genau den Bildschirm, der Verlauf bekommt die Resthoehe */
+  .app { height: 100vh; display: flex; flex-direction: column; }
+  .unten { flex: 1; min-height: 0; }
+  .trend { display: flex; flex-direction: column; min-height: 0; }
+  .trend-flaeche { flex: 1; height: auto; min-height: 140px; }
 }
 </style>

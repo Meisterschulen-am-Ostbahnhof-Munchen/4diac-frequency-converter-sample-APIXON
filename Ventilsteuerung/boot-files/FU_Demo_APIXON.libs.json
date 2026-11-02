@@ -152,10 +152,10 @@
     },
     {
       "file": "fu-demo-dashboard.html",
-      "size": 736072,
-      "sha256": "33a314d25a2c922d14cc13762dee3f8dfa72beec9fca8006ebf2d80a62813361"
+      "size": 753112,
+      "sha256": "ea82e5d534cc489206be32332d43894a84af5eb1c44b090f2213578d62a7209f"
     }
   ],
-  "manifest_sha256": "df1023a73032fa24a215c40ff25c8fb4310c28deacdba0ece47022b4bcd50bde",
+  "manifest_sha256": "1d1aca4352f678886e9e96ec8b36a6c1f4662788afed356b3bfad9161c8f88d9",
   "signature": null
 }
