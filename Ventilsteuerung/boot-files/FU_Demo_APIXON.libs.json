@@ -1,0 +1,106 @@
+{
+  "format": 1,
+  "forte_abi": 6,
+  "arch": "riscv32",
+  "libs": [
+    {
+      "name": "iec61131-3",
+      "version": "3.0.1",
+      "file": "iec61131-3-3.0.1-riscv32.elf",
+      "size": 997180,
+      "sha256": "db3ebfbdb8756b98d31d6f99762eb69dec14645c328226b022d827e235c3afbe",
+      "requires": []
+    },
+    {
+      "name": "events",
+      "version": "3.0.0",
+      "file": "events-3.0.0-riscv32.elf",
+      "size": 188316,
+      "sha256": "e71982a1b92d9f24efed36a6d52a496b78dd0ad6f90a702f90ac6cd995220377",
+      "requires": []
+    },
+    {
+      "name": "logiBUS_signalprocessing_adapter",
+      "version": "3.0.0",
+      "file": "logiBUS_signalprocessing_adapter-3.0.0-riscv32.elf",
+      "size": 271732,
+      "sha256": "a63a8b90ea1e277c06ea856b14dbc13c24a692c918cdc80af1a8ec764beed877",
+      "requires": [
+        {
+          "name": "adapter_types",
+          "range": "^3.0"
+        },
+        {
+          "name": "events",
+          "range": "^3.0"
+        },
+        {
+          "name": "iec61131-3",
+          "range": "^3.0"
+        },
+        {
+          "name": "iec61131-3-bool",
+          "range": "^3.0"
+        },
+        {
+          "name": "logiBUS_signalprocessing",
+          "range": "^3.0"
+        },
+        {
+          "name": "signalprocessing",
+          "range": "^3.0"
+        }
+      ]
+    },
+    {
+      "name": "logiBUS_signalprocessing",
+      "version": "3.0.0",
+      "file": "logiBUS_signalprocessing-3.0.0-riscv32.elf",
+      "size": 102696,
+      "sha256": "4650704dc0705e2918519bde8638f59f9dd02f6506b3c7361acb0123a6cd5a75",
+      "requires": [
+        {
+          "name": "events",
+          "range": "^3.0"
+        },
+        {
+          "name": "signalprocessing",
+          "range": "^3.0"
+        }
+      ]
+    },
+    {
+      "name": "adapter_types",
+      "version": "3.0.0",
+      "file": "adapter_types-3.0.0-riscv32.elf",
+      "size": 238488,
+      "sha256": "476e3c318b39fd33a0a0a3c831bc946d8cfa07585b2a7dd1e635bbe962b5d296",
+      "requires": []
+    },
+    {
+      "name": "iec61131-3-bool",
+      "version": "3.0.1",
+      "file": "iec61131-3-bool-3.0.1-riscv32.elf",
+      "size": 28064,
+      "sha256": "b5e677193f79ad152006884ba1c2c69727fefe09380742400a1a21bd96b7b404",
+      "requires": []
+    },
+    {
+      "name": "signalprocessing",
+      "version": "3.0.0",
+      "file": "signalprocessing-3.0.0-riscv32.elf",
+      "size": 32088,
+      "sha256": "44958fbf9d986d8e12478aa1a0cd3df32054dcfbd89d004e773250c75da276d6",
+      "requires": []
+    }
+  ],
+  "files": [
+    {
+      "file": "FU_Demo_APIXON.fboot",
+      "size": 14575,
+      "sha256": "ee31b459f4e9f425fb1056c1dd0ea93da01d9826cdb67690db32dc774ac50e49"
+    }
+  ],
+  "manifest_sha256": "b04cbecd7b45bed72b0ebe2463dd75851bc9282f1f9406b66117f03b7722aded",
+  "signature": null
+}

@@ -28,6 +28,7 @@ Handbücher) und `Krauternter` (APIXON-Deploy, OPC-UA-Dashboard-Muster).
 | `Ventilsteuerung/4diacIDE-workspace/FU_Demo/` | 4diac-Projekt: System `FU_Demo.sys`, SubApp `FU_Demo_H300.SUB` mit den drei SubApps `FU_Messwerte` (darin `FU_Skalierung`), `FU_Kommando`, `FU_Sollwert`; alle Adressen in `FU_Demo_Konstanten.gcf` |
 | `Ventilsteuerung/APIXON/ethernet.ini` | Feste IP 192.168.1.11 für die APIXON (→ `/data/ethernet.ini`) |
 | `Ventilsteuerung/4diacIDE-workspace/.lib/` | Benötigte Bibliotheken 3.0.x inkl. riscv32/xtensa-ELFs (aus Krauternter übernommen) |
+| `Ventilsteuerung/scripts_central/` | Deploy (Boot-File, Libs-Manifest, ELF-Libs per HTTP auf die APIXON) und Manifest-Erzeugung, aus Krauternter übernommen |
 | `Ventilsteuerung/Web-Clients/opcua-dashboard/` | Vue-3-Dashboard (`@wsopcua`). `dist/fu-demo-dashboard.html` ist eine einzelne Datei |
 | **`docs/SICHERHEIT_Offene_Punkte.md`** | **Vor jeder Vorführung lesen:** Motor läuft weiter, wenn das Dashboard wegfällt; STOP-Taste und Not-Halt noch offen |
 | `docs/Inbetriebnahme.md` | Verdrahtung, H300-Parameter, Gateway-Einstellungen, Fehlersuche |
@@ -70,6 +71,7 @@ anlegen.
 | `FU1.Fehlercode` | UInt16 | lesen | 0 = OK, sonst H300-Fehlercode |
 | `FU1.Kommando` | UInt16 | schreiben | 1 vorwärts, 2 rückwärts, 5 freier Auslauf, 6 Rampenstopp, 7 quittieren |
 | `FU1.SollFrequenz` | Float | schreiben | Hz, wird auf 0…Fmax begrenzt |
+| `FU1.SYSTEM_TICK` | Int32 | lesen | Lebenszeichen 0…99 alle 200 ms (`Ticker`, `MyLib::sys::SystemTickSender_OPC`), im Dashboard neben der Verbindungsanzeige |
 
 Die Knoten lassen sich auch mit UaExpert über `opc.tcp://<APIXON>:4840` prüfen.
 
@@ -82,6 +84,20 @@ npm run dev        # Entwicklung
 npm test           # vitest
 npm run build      # -> dist/fu-demo-dashboard.html
 ```
+
+## Deploy auf die APIXON
+
+In der 4diac IDE (Projekt `FU_Demo`, Ordner `Launches/`) oder direkt per Python:
+
+1. Boot-File in der IDE erzeugen (`boot-files/FU_Demo_APIXON.fboot`).
+2. `RunSkript_MakeLibsManifest` (`scripts_central/make_libs_manifest.py`): schreibt
+   `boot-files/FU_Demo_APIXON.libs.json` mit den benötigten ELF-Libs (riscv32), ohne Netzwerk.
+3. `RunSkript_Deploy` (`scripts_central/make_fu_demo_deploy.py`): lädt fboot, Manifest und
+   ELF-Libs nach `http://192.168.1.11/` hoch (unveränderte Dateien per SHA256 übersprungen)
+   und löscht danach andere `*.fboot`. Danach die APIXON neu starten.
+
+Nie ein neues fboot ohne neu erzeugtes Manifest hochladen: Das Manifest enthält Hash und
+Größe des fboot.
 
 ## Fallstricke, die im Code berücksichtigt sind
 
