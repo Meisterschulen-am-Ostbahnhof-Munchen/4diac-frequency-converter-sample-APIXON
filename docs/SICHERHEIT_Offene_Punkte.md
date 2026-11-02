@@ -19,7 +19,8 @@ Fällt das Dashboard aus, bleibt der letzte Befehl (z. B. „Vorwärts“) im Um
 
 **Bis das gelöst ist:**
 
-- Not-Halt bzw. STOP-Taste am Umrichter muss während der Demo **immer erreichbar** sein.
+- Not-Halt bzw. STOP-Taste am Umrichter muss während der Demo **immer erreichbar** sein
+  (STOP-Taste wirkt auch im Modbus-Betrieb, siehe Punkt 2).
 - Den Motor nicht unbeaufsichtigt laufen lassen.
 
 **Mögliche Lösung (noch nicht umgesetzt):** Lebenszeichen vom Dashboard
@@ -30,14 +31,15 @@ Fällt das Dashboard aus, bleibt der letzte Befehl (z. B. „Vorwärts“) im Um
   (bei jedem neuen Wert neu gestartet) → Stopp-Write.
 - Bei mehreren Dashboards gleichzeitig muss festgelegt werden, wessen Lebenszeichen zählt.
 
-## 2. STOP-Taste am Bedienteil im Kommunikationsbetrieb ⚠️ OFFEN
+## 2. STOP-Taste am Bedienteil im Kommunikationsbetrieb ✅ erledigt
 
-Seit P0.1.06 = 2 kommen Start und Stopp über Modbus. Ob die STOP-Taste am H300-Bedienteil
-dann noch wirkt, ist **nicht getestet**. Das hängt vom STOP-Tasten-Parameter des H300 ab, im
-Handbuch nachsehen.
+Am 2026-11-02 getestet: Die STOP-Taste am H300 stoppt den Motor auch bei P0.1.06 = 2
+(Steuerung über Modbus).
 
-**Test:** Motor über das Dashboard mit 10 Hz starten, dann STOP am Bedienteil drücken. Hält er an?
-Wenn nicht, den Parameter so setzen, dass STOP in allen Steuermodi wirkt.
+Nach einem Stopp am Bedienteil läuft der Motor nicht von selbst wieder an. Die 4diac-Applikation
+schreibt das Steuerwort (9300H) nur, wenn im Dashboard ein Befehl gedrückt wird. Ein geänderter
+Sollwert geht nur auf 9301H und startet nicht. Wieder anlaufen lässt ihn erst ein bewusstes
+„Vorwärts“ oder „Rückwärts“.
 
 ## 3. Kein hardwareseitiger Not-Halt in der Demo ⚠️ OFFEN
 
@@ -59,9 +61,23 @@ niemand überrascht wird.
 9301H wird nicht gespeichert. Nach dem Einschalten steht der Sollwert auf 0 Hz, ein Anlauf mit
 der alten Frequenz ist nicht möglich. Getestet am 2026-11-02.
 
+## 6. Ausfall der Modbus-Kommunikation wird nicht angezeigt ⚠️ OFFEN
+
+Fällt das Gateway oder die RS485-Seite aus, merkt das nur die FORTE-Konsole. Die 4diac-Applikation und das
+Dashboard zeigen die **letzten Werte unverändert weiter an**: eingefroren, aber scheinbar gültig. Grund:
+Der FORTE-Modbus-Layer meldet nur Erfolg (`CNF` nur bei `nrVals > 0`, `modbuspoll.cpp`), Lesefehler
+landen nur im Log.
+
+Der Umrichter selbst stoppt nach 5 s mit Err47 (Punkt 4), die Sicherheit ist also gegeben. Die Anzeige täuscht aber.
+
+**Geplante Lösung:** Watchdog in 4diac (`E_RDELAY` wird von jedem erfolgreichen `CNF` nachgeladen, nach 2 s ohne
+Abfrage wird `FU1.KommunikationOK` FALSE). Das Dashboard zeigt dann einen Warnbalken, graut die Messwerte aus
+und sperrt die Fahrknöpfe. Später zusätzlich in FORTE: Lesefehler als `CNF` mit `QO = FALSE` melden.
+
 ## Erledigt
 
 | Punkt | Datum | Ergebnis |
 |---|---|---|
 | Kommunikationsüberwachung P2.8.07 = 1 / P2.8.04 = 5,0 s | 2026-11-02 | Err47 nach 8 s ohne Abfrage, Quittieren (Steuerwort 7) funktioniert |
 | Sollwert 0 Hz nach Netz-Aus | 2026-11-02 | geprüft |
+| STOP-Taste am Bedienteil im Modbus-Betrieb | 2026-11-02 | stoppt den Motor |

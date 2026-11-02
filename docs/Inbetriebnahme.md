@@ -50,6 +50,20 @@ Werks-IP ist laut Waveshare-Wiki `192.168.1.200`. Weboberfläche oder VirCom:
 3. Transfer protocol: **Modbus TCP ↔ RTU**. Laut Wiki wechselt der Port dabei auf 502. Am Demo-Gateway läuft Modbus TCP aber auf **4196** (am 2026-11-02 mit `tools/h300_modbus_test.py` gemessen; 502 ist dort zu). Die GCF verwendet deshalb 4196.
 4. Prüfen, ob „Storage Mode“ (Gateway pollt selbst zyklisch nach) aktiv ist. Für den Demo-Betrieb möglichst **non-storage**: Anfragen werden nur durchgereicht.
 
+**Eingestellt am Demo-Gateway (Firmware V1.523, Stand 2026-11-02):**
+
+| Feld | Wert | Bemerkung |
+|---|---|---|
+| Device IP / Subnet / Gateway | 192.168.1.200 / 255.255.255.0 / 192.168.1.1 | IP mode Static |
+| Work Mode / Device Port | TCP Server / **4196** | Modbus TCP läuft hier auf 4196, nicht auf 502 |
+| Baud / Datenbits / Parität / Stoppbits | 9600 / 8 / None / **2** | = H300 P2.8.00 = 3, P2.8.01 = 0 (8-N-2) |
+| Flow control | None | |
+| Protocol | **Modbus TCP to RTU** | Multi-host damit automatisch an |
+| Instruction Time out | **320 ms** | Werkswert 32 ms ist zu knapp: Anfrage + Antwort bei 9600 Baud ≈ 30 ms. Nur Vielfache von 32 |
+| RS232/485/422 Conflict Time Gap | 5 ms | Werkswert |
+| No-Data-Restart | **Disable** | Sonst Neustart des Gateways, wenn > 300 s nicht gepollt wird (z. B. beim Deploy) |
+| Destination IP/Port, Reconnect-time | egal | gelten nur im Client-Modus |
+
 Schnelltest vom PC: `python tools/h300_modbus_test.py 192.168.1.200 4196 1 tcp` (liest nur). Alternativ mit `mbpoll` oder Modbus Poll: Holding Register **36864** (= 9000H) lesen, Slave 1. Im Stillstand kommt 0 zurück, im Lauf die Frequenz × 100.
 
 ## 4. APIXON / 4diac
@@ -92,3 +106,35 @@ Nach Aus-/Einschalten: P0.1.06/P0.1.09 bleiben erhalten, 9301H startet mit 0 Hz.
 | Frequenz-Sollwert wirkt nicht | P0.1.09 ≠ 9, oder P0.1.16 passt nicht zu `FU_FMAX_HZ` |
 | Frequenz bleibt bei 50 Hz hängen | P0.1.18 (obere Grenzfrequenz) noch auf 50.00 |
 | Err47 am Umrichter | Kommunikationstimeout (P2.8.04). Polling läuft nicht: APIXON oder Netz prüfen |
+
+## Befund 2026-11-02: Waveshare-Gateway defekt
+
+**Symptom:** Er47.1 bzw. Er47.2 am Umrichter, auch bei 1 Hz. Im APIXON-Log `Error reading input status ::
+Connection timed out`, danach mehrere Sekunden `Connection to Modbus server failed`. Dashboard ohne Anzeige
+(siehe [SICHERHEIT_Offene_Punkte.md](SICHERHEIT_Offene_Punkte.md), Punkt 6).
+
+**Ablauf der Fehlersuche (Dauer-Ping PC → Gateway/APIXON, Switch-Log, LEDs):**
+
+| Beobachtung | Folgerung |
+|---|---|
+| Ping zum Gateway fällt 4–17 s aus, APIXON bleibt erreichbar | Problem am Gateway-Port bzw. Gateway, nicht im Netz |
+| FORTE-Log und Ping zeitgleich, gleiche Dauer | Er47 ist Folge, nicht Ursache (5 s ohne Abfrage = P2.8.04) |
+| Switch-Log: `LINK-UPDOWN … GigabitEthernet 1/2`, keine PoE-Ereignisse | reiner Ethernet-Linkverlust |
+| Kabel getauscht, altes Kabel am PC ohne Probleme | Kabel ausgeschlossen |
+| Gateway an Port 3 statt 2: wieder Ausfälle | Switch-Port ausgeschlossen |
+| Switch: EEE, ActiPHY, PerfectReach aus; PoE PD-Alive aus | Switch-Funktionen ausgeschlossen |
+| Gateway: Instruction Time out 32→320 ms, No-Data-Restart aus, Reconnect-time 255 | Gateway-Einstellungen ausgeschlossen |
+| Gateway zeitweise komplett dunkel, zuletzt dauerhaft | Versorgung im Gateway setzt aus |
+| Separates 9-V-Steckernetzteil (am Stecker gemessen) an DC-Eingang: bleibt dunkel | **Gateway defekt** (interner Spannungswandler, über den PoE und DC laufen) |
+
+**Ersatz:** Gateway gleichen Typs mit der Tabelle in Abschnitt 3 einstellen (IP 192.168.1.200, Port 4196,
+9600/8/N/2, Modbus TCP to RTU, Instruction Time out 320 ms, No-Data-Restart aus). 4diac und Dashboard
+brauchen dann keine Änderung.
+
+**Nebenbefunde:**
+- Mit Instruction Time out 320 ms beantwortet das Gateway auch die erste Anfrage nach dem Verbindungsaufbau.
+  Bei 32 ms ging sie verloren.
+- Der Switch ALL-SGI8106PMJ hat ab Werk **192.168.2.1** (admin/admin), also ein anderes Subnetz als die Demo.
+  Zum Konfigurieren dem PC eine Zweit-IP 192.168.2.x geben. Empfehlung: Switch-IP auf 192.168.1.x setzen
+  und Passwort ändern.
+
