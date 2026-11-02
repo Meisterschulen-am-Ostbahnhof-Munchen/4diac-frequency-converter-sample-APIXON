@@ -4,9 +4,10 @@
       <h1>FU-Demo &ndash; DELIXI H300G0R75P1R1T4B (0,75 kW)</h1>
       <div class="connection">
         <span class="dot" :class="{ on: connected }"></span>
-        <input v-model="endpointUrl" class="url-input" :disabled="connected" />
-        <button @click="connected ? disconnect() : connect()">
-          {{ connected ? 'Trennen' : 'Verbinden' }}
+        <span v-if="connected" class="tick-badge" :class="{ pulse: tickChanged }" title="Lebenszeichen der APIXON">{{ tick }}</span>
+        <input v-model="endpointUrl" class="url-input" :disabled="connected || connecting" />
+        <button @click="connected || connecting ? disconnect() : connect()">
+          {{ connected ? 'Trennen' : connecting ? 'Abbrechen' : 'Verbinden' }}
         </button>
       </div>
       <p class="status-line">{{ verbindungsText }}</p>
@@ -94,6 +95,7 @@ import {
   MESSWERT_NODES,
   KOMMANDO_NODE,
   SOLLFREQUENZ_NODE,
+  TICK_NODE,
   KOMMANDO,
   kommandoText,
   statusText,
@@ -132,32 +134,95 @@ function fmt(v: number, stellen: number): string {
 let client: any = null
 let session: any = null
 
+// Lebenszeichen der APIXON (SystemTickSender_OPC: 0..99 alle 200 ms)
+const tick = ref<number | string>('–')
+const tickChanged = ref(false)
+let tickPulseTimer: ReturnType<typeof setTimeout> | undefined
+
+// Eigene Wiederholung statt connectionStrategy (bleibt maxRetry 0): die APIXON
+// ist nach einem Neustart erst nach einigen Sekunden erreichbar.
+const CONNECT_ATTEMPTS = 5
+const CONNECT_RETRY_MS = 3000
+const connecting = ref(false)
+// Jeder connect()/disconnect() erhoeht den Zaehler; laufende Versuche mit
+// altem Stand brechen ab.
+let connectRun = 0
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined
+
 function resetWerte() {
   for (const n of MESSWERT_NODES) werte[n.key] = 0
+  tick.value = '–'
+}
+
+// Alten Client immer trennen, sonst bleibt die Verbindung auf der APIXON
+// belegt, bis sie dort in den Timeout laeuft.
+async function closeClient() {
+  const c = client
+  client = null
+  session = null
+  if (!c) return
+  c.off('connection_lost', handleLost)
+  c.off('close', handleLost)
+  try {
+    await c.disconnectP()
+  } catch {
+    // war schon getrennt
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function handleLost() {
   if (!connected.value) return
   connected.value = false
-  verbindungsText.value = 'Fehler: Verbindung verloren'
+  void closeClient()
+  clearTimeout(reconnectTimer)
+  reconnectTimer = setTimeout(connect, CONNECT_RETRY_MS)
+  verbindungsText.value = 'Fehler: Verbindung verloren, neuer Versuch…'
   resetWerte()
 }
 
 async function connect() {
-  verbindungsText.value = 'Verbinde…'
-  client = new OPCUAClient({
-    securityMode: MessageSecurityMode.None,
-    securityPolicy: SecurityPolicy.None,
-    endpoint_must_exist: false,
-    connectionStrategy: { maxRetry: 0 },
-  })
+  const run = ++connectRun
+  clearTimeout(reconnectTimer)
+  connecting.value = true
+  await closeClient()
+
+  for (let attempt = 1; ; attempt++) {
+    if (run !== connectRun) return
+    verbindungsText.value = attempt === 1 ? 'Verbinde…' : `Verbinde… (Versuch ${attempt}/${CONNECT_ATTEMPTS})`
+    client = new OPCUAClient({
+      securityMode: MessageSecurityMode.None,
+      securityPolicy: SecurityPolicy.None,
+      endpoint_must_exist: false,
+      connectionStrategy: { maxRetry: 0 },
+    })
+    try {
+      await client.connectP(endpointUrl.value)
+      break
+    } catch (err) {
+      await closeClient()
+      if (run !== connectRun) return
+      if (attempt >= CONNECT_ATTEMPTS) {
+        console.error('FU-Demo connect failed:', err)
+        verbindungsText.value = `Fehler: ${err}`
+        connecting.value = false
+        return
+      }
+      await sleep(CONNECT_RETRY_MS)
+    }
+  }
+  if (run !== connectRun) return
 
   try {
-    await client.connectP(endpointUrl.value)
     client.on('connection_lost', handleLost)
     client.on('close', handleLost)
     session = await client.createSessionP({})
+    if (run !== connectRun) return
     connected.value = true
+    connecting.value = false
     verbindungsText.value = 'Verbunden'
 
     const subscription = new ClientSubscription(session, {
@@ -192,19 +257,33 @@ async function connect() {
       if (index === 0) letztesKommando.value = v
       else letzteSollFrequenz.value = v
     })
+
+    const tickGroup = await subscription.monitorItemsP(
+      [{ nodeId: coerceNodeId(TICK_NODE), attributeId: AttributeIds.Value }],
+      { samplingInterval: 100, discardOldest: true, queueSize: 2 },
+      TimestampsToReturn.Neither
+    )
+    tickGroup.on('changed', (_item: any, dataValue: any) => {
+      tick.value = dataValue.value?.value ?? '–'
+      tickChanged.value = true
+      clearTimeout(tickPulseTimer)
+      tickPulseTimer = setTimeout(() => { tickChanged.value = false }, 400)
+    })
   } catch (err) {
+    if (run !== connectRun) return
     console.error('FU-Demo connect failed:', err)
     verbindungsText.value = `Fehler: ${err}`
     connected.value = false
+    connecting.value = false
+    await closeClient()
   }
 }
 
 async function disconnect() {
-  if (client) {
-    client.off('connection_lost', handleLost)
-    client.off('close', handleLost)
-    await client.disconnectP()
-  }
+  connectRun++
+  clearTimeout(reconnectTimer)
+  connecting.value = false
+  await closeClient()
   connected.value = false
   verbindungsText.value = 'Getrennt'
   resetWerte()
@@ -289,6 +368,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearInterval(trendTimer)
+  clearTimeout(tickPulseTimer)
+  clearTimeout(reconnectTimer)
   disconnect()
 })
 </script>
@@ -313,6 +394,16 @@ h2 { font-size: 1rem; margin: 0 0 0.75rem; color: #fff; }
 .url-input { flex: 1; min-width: 200px; padding: 0.35rem; background: #0f1629; color: #e0e0e0; border: 1px solid #2a3a5e; border-radius: 4px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; background: #c62828; }
 .dot.on { background: #43a047; }
+.tick-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #4ade80;
+  min-width: 1.5rem;
+  text-align: center;
+  transition: color 0.2s;
+}
+.tick-badge.pulse { color: #fff; }
 .status-line { font-size: 0.8rem; color: #999; margin: 0.4rem 0 1rem; }
 
 button {

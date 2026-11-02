@@ -20,6 +20,8 @@ export type MesswertKey = (typeof MESSWERT_NODES)[number]['key']
 
 export const KOMMANDO_NODE = 'ns=1;s=FU1.Kommando'
 export const SOLLFREQUENZ_NODE = 'ns=1;s=FU1.SollFrequenz'
+// Lebenszeichen der APIXON, Int32 0..99 alle 200 ms (SystemTickSender_OPC)
+export const TICK_NODE = 'ns=1;s=FU1.SYSTEM_TICK'
 
 // Steuerwort 9300H
 export const KOMMANDO = {
