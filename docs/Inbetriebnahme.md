@@ -64,6 +64,19 @@ Schnelltest vom PC: `python tools/h300_modbus_test.py 192.168.1.200 4196 1 tcp` 
 
 Erste Fahrt: Sollfrequenz 10 Hz senden → „Vorwärts“ → Ist-Frequenz steigt mit der Rampe → „Stopp (Rampe)“.
 
+## Fahrtest am 2026-11-02 (direkt per Modbus, ohne APIXON)
+
+Gateway 192.168.1.200:4196, Schreiben mit Funktionscode 0x10 (wie FORTE):
+
+| Kommando | Ergebnis |
+|---|---|
+| 9301H := 2000 (10 Hz), 9300H := 1 | vorwärts, nach ~4 s 10,00 Hz, 1,56 A, 93 V |
+| 9300H := 6 | Rampenstopp, ~3 s bis 0 Hz |
+| 9301H := 2000, 9300H := 2 | rückwärts, 10,00 Hz, 1,55 A, 93 V (Rückwärtslauf erlaubt) |
+| 9300H := 6 | Rampenstopp, ~3 s bis 0 Hz |
+
+Nach Aus-/Einschalten: P0.1.06/P0.1.09 bleiben erhalten, 9301H startet mit 0 Hz.
+
 ## Fehlersuche
 
 | Symptom | Ursache / Prüfung |

@@ -97,13 +97,9 @@ npm run build      # -> dist/fu-demo-dashboard.html
 
 ## Offene Risiken (am echten Gerät prüfen)
 
-1. **Funktionscode 0x10:** FORTE schreibt Holding-Register immer mit
-   `modbus_write_registers` (0x10, auch bei einem einzelnen Register). Das
-   H300-Handbuch zeigt für 9300H/9301H nur 0x06. Lehnt der H300 0x10 ab
-   (Exception „Illegal Function“), wirken Kommandos und Sollwert nicht, das
-   Lesen aber schon. Abhilfe wäre ein kleiner FORTE-Patch in
-   `modbusclientconnection.cpp`: bei `paNrAddresses == 1` → `modbus_write_register`
-   (0x06). Siehe auch Frage 2 in `Umrichter_Modbus_Support_Questions.md`.
+1. ~~**Funktionscode 0x10**~~ – **erledigt (2026-11-02, am Gerät getestet):** Der H300
+   (SW 1.21) nimmt 0x10 für 9300H und 9301H an. Der Motor lief mit 10 Hz vorwärts
+   (1,56 A, 93 V) und stoppte über die Rampe. FORTE braucht also keinen Patch.
 2. **Kein Kommunikations-Status:** Der Modbus-Layer meldet Lesefehler nicht an
    `QO` weiter (`recvData`: „TODO check if errors occured during polling“).
    Fällt das Gateway aus, frieren die Werte im Dashboard ein. Erkennbar ist das
