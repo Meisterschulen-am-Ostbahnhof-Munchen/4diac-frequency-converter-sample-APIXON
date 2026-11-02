@@ -35,6 +35,9 @@ erwarten, die Zwischenkreisspannung liegt im Leerlauf bei etwa 540–560 V.
 Motordaten (P1.0.x) vom Motor-Typenschild eintragen. Nennstrom höchstens 3,0 A (G-Typ),
 damit der Motorschutz des Umrichters passt.
 
+Am Demo-Umrichter wurden P0.1.06 = 2 und P0.1.09 = 9 am 2026-11-02 per Modbus (06H) auf die EEPROM-Adressen
+0x0106/0x0109 geschrieben und zurückgelesen. Die RAM-Adressen wären +0x0A00 (0x0B06/0x0B09) gewesen.
+
 Rückwärtslauf muss am Umrichter erlaubt sein, sonst wird Kommando 2 ignoriert. Rampen (P0.2.00/P0.2.01) passend zum Motor einstellen.
 
 ## 3. Waveshare-Gateway
@@ -43,10 +46,10 @@ Werks-IP ist laut Waveshare-Wiki `192.168.1.200`. Weboberfläche oder VirCom:
 
 1. IP `192.168.1.200` lassen oder ändern. Bei Änderung die IP in allen drei `FU_MODBUS_*`-Konstanten der GCF anpassen.
 2. Serielle Parameter **explizit** setzen: 9600 Baud, 8 Datenbits, keine Parität, **2 Stoppbits** (kein verlässlicher Werksdefault).
-3. Transfer protocol: **Modbus TCP ↔ RTU**. Der Port wechselt dann auf **502**. Werksdefault ist „transparent“ auf Port 4196, damit spricht FORTE kein Modbus.
+3. Transfer protocol: **Modbus TCP ↔ RTU**. Laut Wiki wechselt der Port dabei auf 502. Am Demo-Gateway läuft Modbus TCP aber auf **4196** (am 2026-11-02 mit `tools/h300_modbus_test.py` gemessen; 502 ist dort zu). Die GCF verwendet deshalb 4196.
 4. Prüfen, ob „Storage Mode“ (Gateway pollt selbst zyklisch nach) aktiv ist. Für den Demo-Betrieb möglichst **non-storage**: Anfragen werden nur durchgereicht.
 
-Schnelltest vom PC (z. B. mit `mbpoll` oder Modbus Poll): Holding Register **36864** (= 9000H) lesen, Slave 1. Im Stillstand kommt 0 zurück, im Lauf die Frequenz × 100.
+Schnelltest vom PC: `python tools/h300_modbus_test.py 192.168.1.200 4196 1 tcp` (liest nur). Alternativ mit `mbpoll` oder Modbus Poll: Holding Register **36864** (= 9000H) lesen, Slave 1. Im Stillstand kommt 0 zurück, im Lauf die Frequenz × 100.
 
 ## 4. APIXON / 4diac
 
@@ -65,7 +68,7 @@ Erste Fahrt: Sollfrequenz 10 Hz senden → „Vorwärts“ → Ist-Frequenz stei
 
 | Symptom | Ursache / Prüfung |
 |---|---|
-| Alle Werte bleiben 0 | Gateway nicht im Modbus-TCP-Modus (Port 4196 statt 502), falsche IP, oder Baud/Stoppbits passen nicht |
+| Alle Werte bleiben 0 | Gateway nicht im Modbus-TCP-Modus, falscher Port in der GCF (Test: `python tools/h300_modbus_test.py 192.168.1.200 4196 1 tcp`), falsche IP, oder Baud/Stoppbits passen nicht |
 | Werte kommen, Kommandos wirken nicht | P0.1.06 ≠ 2, oder der H300 lehnt Funktionscode 0x10 ab (siehe README „Offene Risiken“) |
 | Frequenz-Sollwert wirkt nicht | P0.1.09 ≠ 9, oder P0.1.16 passt nicht zu `FU_FMAX_HZ` |
 | Err47 am Umrichter | Kommunikationstimeout (P2.8.04). Polling läuft nicht: APIXON oder Netz prüfen |

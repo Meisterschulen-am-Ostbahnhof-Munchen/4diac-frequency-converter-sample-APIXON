@@ -1,3 +1,4 @@
 node_modules/
 *.tsbuildinfo
 coverage/
+__pycache__/

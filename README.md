@@ -10,7 +10,7 @@ Getreideannahme-Projekt, deshalb gilt dieselbe Registerkarte (Handbuch Kap. 9.1)
 
 ```
  Browser/Tablet ──ws://APIXON:4841 (OPC UA)──► APIXON (4diac FORTE)
-                                                  │ Modbus TCP, Port 502
+                                                  │ Modbus TCP, Port 4196
                                                   ▼
                               Waveshare RS232/485/422 TO POE ETH (B)
                                                   │ Modbus RTU, 9600 8-N-2
