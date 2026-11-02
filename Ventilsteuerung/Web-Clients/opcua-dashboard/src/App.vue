@@ -9,6 +9,12 @@
         <button @click="connected || connecting ? disconnect() : connect()">
           {{ connected ? 'Trennen' : connecting ? 'Abbrechen' : 'Verbinden' }}
         </button>
+        <button class="anzeige" :class="{ aktiv: istVollbild }" @click="toggleVollbild">
+          {{ istVollbild ? '⤢ Vollbild aus' : '⛶ Vollbild' }}
+        </button>
+        <button class="anzeige" :class="{ aktiv: wachHalten }" title="Bildschirm nicht abschalten" @click="toggleWachHalten">
+          {{ wachHalten ? '☀ Wach' : '☾ Standby' }}
+        </button>
       </div>
       <p class="status-line">{{ verbindungsText }}</p>
     </header>
@@ -44,39 +50,42 @@
       </div>
     </section>
 
-    <section class="trend">
-      <div class="trend-kopf">
-        <span>Verlauf 60 s</span>
-        <span class="legende"><i class="f"></i>Frequenz (0&ndash;{{ FMAX_HZ }} Hz) <i class="a"></i>Strom (auto)</span>
-      </div>
-      <canvas ref="trendCanvas" width="860" height="160"></canvas>
-    </section>
+    <div class="unten">
+      <section class="trend">
+        <div class="trend-kopf">
+          <span>Verlauf 60 s</span>
+          <span class="legende"><i class="f"></i>Frequenz (0&ndash;{{ FMAX_HZ }} Hz) <i class="a"></i>Strom (auto)</span>
+        </div>
+        <canvas ref="trendCanvas" width="860" height="160"></canvas>
+      </section>
 
-    <section class="bedienung">
-      <h2>Bedienung</h2>
-      <div class="buttons">
-        <button class="start" :disabled="!connected || hatStoerung" @click="sendeKommando(KOMMANDO.VORWAERTS)">▶ Vorwärts</button>
-        <button class="start" :disabled="!connected || hatStoerung" @click="sendeKommando(KOMMANDO.RUECKWAERTS)">◀ Rückwärts</button>
-        <button class="stopp" :disabled="!connected" @click="sendeKommando(KOMMANDO.RAMPENSTOPP)">■ Stopp (Rampe)</button>
-        <button class="stopp" :disabled="!connected" @click="sendeKommando(KOMMANDO.FREIER_AUSLAUF)">Freier Auslauf</button>
-        <button class="quitt" :disabled="!connected || !hatStoerung" @click="sendeKommando(KOMMANDO.QUITTIEREN)">Störung quittieren</button>
-      </div>
-      <p class="hinweis">Zuletzt gesendet: {{ kommandoText(letztesKommando) }}</p>
+      <section class="bedienung">
+        <h2>Bedienung</h2>
+        <div class="buttons">
+          <button class="start" :disabled="!connected || hatStoerung" @click="sendeKommando(KOMMANDO.VORWAERTS)">▶ Vorwärts</button>
+          <button class="start" :disabled="!connected || hatStoerung" @click="sendeKommando(KOMMANDO.RUECKWAERTS)">◀ Rückwärts</button>
+          <button class="stopp" :disabled="!connected" @click="sendeKommando(KOMMANDO.RAMPENSTOPP)">■ Stopp (Rampe)</button>
+          <button class="stopp" :disabled="!connected" @click="sendeKommando(KOMMANDO.FREIER_AUSLAUF)">Freier Auslauf</button>
+          <button class="quitt" :disabled="!connected || !hatStoerung" @click="sendeKommando(KOMMANDO.QUITTIEREN)">Störung quittieren</button>
+        </div>
+        <p class="hinweis">Zuletzt gesendet: {{ kommandoText(letztesKommando) }}</p>
 
-      <div class="soll">
-        <label>Sollfrequenz</label>
-        <input type="range" min="0" :max="FMAX_HZ" step="0.5" v-model.number="sollEingabe" :disabled="!connected" />
-        <input type="number" min="0" :max="FMAX_HZ" step="0.1" v-model.number="sollEingabe" :disabled="!connected" class="zahl" />
-        <span>Hz</span>
-        <button :disabled="!connected" @click="sendeSollFrequenz">Senden</button>
-      </div>
-      <p class="hinweis">Am OPC-UA-Knoten: {{ fmt(letzteSollFrequenz, 1) }} Hz (Begrenzung 0&ndash;{{ FMAX_HZ }} Hz macht die 4diac-Applikation)</p>
-    </section>
+        <div class="soll">
+          <label>Sollfrequenz</label>
+          <input type="range" min="0" :max="FMAX_HZ" step="0.5" v-model.number="sollEingabe" :disabled="!connected" />
+          <input type="number" min="0" :max="FMAX_HZ" step="0.1" v-model.number="sollEingabe" :disabled="!connected" class="zahl" />
+          <span>Hz</span>
+          <button :disabled="!connected" @click="sendeSollFrequenz">Senden</button>
+        </div>
+        <p class="hinweis">Am OPC-UA-Knoten: {{ fmt(letzteSollFrequenz, 1) }} Hz (Begrenzung 0&ndash;{{ FMAX_HZ }} Hz macht die 4diac-Applikation)</p>
+      </section>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import NoSleep from 'nosleep.js'
 import {
   OPCUAClient,
   MessageSecurityMode,
@@ -366,14 +375,71 @@ function zeichneTrend() {
   zeichneLinie(ctx, trendStrom, stromMax, '#ffb74d')
 }
 
+// Vollbild (Fullscreen-API, geht auch ueber http://) und Bildschirm wach halten.
+// Die Wake-Lock-API gibt es in Chrome nur auf sicheren Seiten (HTTPS/localhost) -
+// die APIXON liefert aber http:// aus. NoSleep.js nimmt den echten Wake Lock, wenn
+// vorhanden, sonst ein unsichtbares stummes Endlos-Video. Beides nur aus einem Klick heraus.
+const istVollbild = ref(false)
+const wachHalten = ref(false)
+let noSleep: NoSleep | null = null
+
+async function wachHaltenAn() {
+  noSleep ??= new NoSleep()
+  try {
+    await noSleep.enable()
+    wachHalten.value = true
+  } catch (err) {
+    console.error('Wach halten nicht moeglich:', err)
+  }
+}
+
+function wachHaltenAus() {
+  noSleep?.disable()
+  wachHalten.value = false
+}
+
+function toggleWachHalten() {
+  return wachHalten.value ? wachHaltenAus() : wachHaltenAn()
+}
+
+async function toggleVollbild() {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen()
+    } else {
+      // wachHaltenAn() zuerst: braucht wie requestFullscreen() die Klick-Geste
+      if (!wachHalten.value) await wachHaltenAn()
+      await document.documentElement.requestFullscreen({ navigationUI: 'hide' })
+    }
+  } catch (err) {
+    console.error('Vollbild nicht moeglich:', err)
+  }
+}
+
+function onFullscreenChange() {
+  istVollbild.value = !!document.fullscreenElement
+}
+
+function onVisibilityChange() {
+  // Nach Tab-Wechsel/Display-Aus haelt der Browser Wake Lock bzw. Video an
+  if (wachHalten.value && document.visibilityState === 'visible' && noSleep && !noSleep.isEnabled) {
+    noSleep.enable().catch(() => { wachHalten.value = false })
+  }
+}
+
 onMounted(() => {
   trendTimer = setInterval(trendSample, 200)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
   clearInterval(trendTimer)
   clearTimeout(tickPulseTimer)
   clearTimeout(reconnectTimer)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  wachHaltenAus()
   disconnect()
 })
 </script>
@@ -383,16 +449,16 @@ onUnmounted(() => {
 
 .app {
   font-family: system-ui, sans-serif;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0.6rem 1rem;
   background: #1a1a2e;
   min-height: 100vh;
   color: #e0e0e0;
 }
 
-h1 { font-size: 1.3rem; margin: 0 0 0.5rem; color: #fff; }
-h2 { font-size: 1rem; margin: 0 0 0.75rem; color: #fff; }
+h1 { font-size: 1.15rem; margin: 0 0 0.4rem; color: #fff; }
+h2 { font-size: 1rem; margin: 0 0 0.6rem; color: #fff; }
 
 .connection { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .url-input { flex: 1; min-width: 200px; padding: 0.35rem; background: #0f1629; color: #e0e0e0; border: 1px solid #2a3a5e; border-radius: 4px; }
@@ -408,7 +474,7 @@ h2 { font-size: 1rem; margin: 0 0 0.75rem; color: #fff; }
   transition: color 0.2s;
 }
 .tick-badge.pulse { color: #fff; }
-.status-line { font-size: 0.8rem; color: #999; margin: 0.4rem 0 1rem; }
+.status-line { font-size: 0.8rem; color: #999; margin: 0.25rem 0 0.5rem; }
 
 button {
   padding: 0.45rem 0.9rem;
@@ -423,8 +489,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 button.start { background: #2e7d32; }
 button.stopp { background: #b71c1c; }
 button.quitt { background: #f9a825; color: #000; }
+button.anzeige { background: transparent; border: 1px solid #2a3a5e; color: #bbb; }
+button.anzeige.aktiv { border-color: #4fc3f7; color: #4fc3f7; }
 
-section { background: #16213e; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+section { background: #16213e; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.6rem; }
 
 .zustand { text-align: center; font-size: 1.2rem; font-weight: 600; border: 2px solid transparent; }
 .zustand.laeuft { border-color: #43a047; }
@@ -447,8 +515,19 @@ section { background: #16213e; border-radius: 8px; padding: 1rem; margin-bottom:
 canvas { width: 100%; height: 160px; background: #0f1629; border-radius: 4px; }
 
 .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.soll { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+.soll { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
 .soll input[type='range'] { flex: 1; min-width: 160px; }
 .zahl { width: 5.5rem; padding: 0.3rem; background: #0f1629; color: #e0e0e0; border: 1px solid #2a3a5e; border-radius: 4px; }
 .hinweis { font-size: 0.8rem; color: #999; margin: 0.5rem 0 0; }
+
+/* Tablet quer (z. B. 1280x800): Messwerte in einer Zeile, Verlauf und Bedienung nebeneinander */
+@media (min-width: 900px) {
+  .kacheln { grid-template-columns: 2fr repeat(4, 1fr); }
+  .kachel.gross { grid-column: auto; }
+}
+@media (min-width: 1000px) {
+  .unten { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; align-items: stretch; }
+  .unten section { margin-bottom: 0; }
+  .trend canvas { height: 200px; }
+}
 </style>
