@@ -10,13 +10,26 @@ erwarten, die Zwischenkreisspannung liegt im Leerlauf bei etwa 540–560 V.
 
 | Waveshare RS232/485/422 TO POE ETH (B) | DELIXI H300 |
 |---|---|
-| RS485 A+ | 485+ |
-| RS485 B- | 485- |
-| GND | GND (Steuerklemmen) |
+| TA (RS485 A) | 485+ |
+| TB (RS485 B) | 485- |
+| **PE** (laut Waveshare „Signal Ground“) | **COM** (nicht GND!) – am 2026-11-03 umgeklemmt, deutlich stabiler |
+| GND | **nicht anschließen**: Masse der Versorgung 6–36 V DC, nicht der RS485 |
 
-- Leitung: verdrillt, geschirmt. Schirm einseitig auflegen.
-- Kurze Punkt-zu-Punkt-Strecke: Abschlusswiderstand 120 Ω am Umrichterende nur bei Problemen (falls am H300 per DIP vorhanden).
-- Gateway per PoE (802.3af) oder 5–36 V DC versorgen.
+- Achtung: Die Klemme „PE“ am Waveshare ist die **Signalmasse** der RS485, keine Schutzerde.
+  Nicht auf Schutzerde (PE) des Schranks legen.
+- Leitung: A/B auf ein verdrilltes Paar, Signalmasse auf eine dritte Ader, geschirmt.
+- Schirm einseitig am Umrichter auf die Schirmschiene (großflächig mit Schelle), Gateway-Seite isolieren.
+  Schirm nicht als Signalmasse verwenden. An der Schirmschiene Mantel abisolieren, Schirm blank unter die
+  Schelle; dahinter endet der Schirm. Die Adern ab der Schiene bis zu den Klemmen möglichst kurz und
+  verdrillt lassen, kein Schirm-„Schweineschwanz“ zur Klemme.
+- Motorleitung geschirmt, Schirm beidseitig (Schirmschiene Umrichter + EMV-Verschraubung Motor).
+  RS485 getrennt von der Motorleitung verlegen.
+- Abschlusswiderstand: am 2026-11-03 eingeschaltet, brachte deutlich mehr Stabilität. Richtig ist an **beiden** Enden.
+  Kontrolle spannungsfrei zwischen A und B: ca. 60 Ω = beide Enden, ca. 120 Ω = ein Ende.
+- Gateway per PoE (802.3af) oder 6–36 V DC versorgen.
+- ALLNET-Switch: PE-Anschluss kurz auf die PE-Schiene / Montageplatte legen.
+- Ergebnis 2026-11-03: Abschluss an beiden Enden (60 Ω gemessen) + Signalmasse auf COM →
+  Motor läuft mit 25 Hz lange ohne Er47.
 
 ## 2. Parameter am H300
 

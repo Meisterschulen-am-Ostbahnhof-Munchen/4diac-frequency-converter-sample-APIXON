@@ -1,7 +1,12 @@
 <template>
-  <div class="app">
+  <div class="app" :class="{ hell }">
     <header>
-      <h1>FU-Demo &ndash; DELIXI H300G0R75P1R1T4B (0,75 kW)</h1>
+      <div class="kopfzeile">
+        <h1>FU-Demo &ndash; DELIXI H300G0R75P1R1T4B (0,75 kW)</h1>
+        <button class="anzeige thema" :title="hell ? 'Dunkle Darstellung' : 'Helle Darstellung'" @click="toggleThema">
+          {{ hell ? '☾ Dunkel' : '☀ Hell' }}
+        </button>
+      </div>
       <div class="connection">
         <span class="dot" :class="{ on: connected }"></span>
         <span v-if="connected" class="tick-badge" :class="{ pulse: tickChanged }" title="Lebenszeichen der APIXON">{{ tick }}</span>
@@ -374,15 +379,35 @@ function zeichneTrend() {
     canvas.height = hoehe
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.strokeStyle = '#2a3a5e'
+  ctx.strokeStyle = hell.value ? '#c3cddc' : '#2a3a5e'
   ctx.lineWidth = 1
   for (let i = 1; i < 4; i++) {
     const y = (canvas.height / 4) * i
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke()
   }
   const stromMax = Math.max(1, ...trendStrom.filter((v) => !Number.isNaN(v))) * 1.2
-  zeichneLinie(ctx, trendFrequenz, FMAX_HZ, '#4fc3f7')
-  zeichneLinie(ctx, trendStrom, stromMax, '#ffb74d')
+  zeichneLinie(ctx, trendFrequenz, FMAX_HZ, hell.value ? '#0277bd' : '#4fc3f7')
+  zeichneLinie(ctx, trendStrom, stromMax, hell.value ? '#e65100' : '#ffb74d')
+}
+
+// Helle/dunkle Darstellung, pro Geraet im Browser gemerkt (localStorage kann fehlen
+// oder werfen, z. B. im privaten Modus - dann einfach dunkel).
+const THEMA_KEY = 'fu-demo-thema'
+function leseThema(): boolean {
+  try { return localStorage.getItem(THEMA_KEY) === 'hell' } catch { return false }
+}
+const hell = ref(leseThema())
+
+function wendeThemaAn() {
+  // Seitenhintergrund ausserhalb von .app (Ueberscrollen, Raender) mitziehen
+  document.body.style.background = hell.value ? '#eef1f6' : '#1a1a2e'
+  zeichneTrend()
+}
+
+function toggleThema() {
+  hell.value = !hell.value
+  try { localStorage.setItem(THEMA_KEY, hell.value ? 'hell' : 'dunkel') } catch { /* egal */ }
+  wendeThemaAn()
 }
 
 // Vollbild (Fullscreen-API, geht auch ueber http://) und Bildschirm wach halten.
@@ -438,6 +463,7 @@ function onVisibilityChange() {
 }
 
 onMounted(() => {
+  wendeThemaAn()
   trendTimer = setInterval(trendSample, 200)
   document.addEventListener('fullscreenchange', onFullscreenChange)
   document.addEventListener('visibilitychange', onVisibilityChange)
@@ -457,79 +483,120 @@ onUnmounted(() => {
 <style scoped>
 * { box-sizing: border-box; }
 
+/* Farben: dunkel (Standard) und hell, umgeschaltet ueber die Klasse .hell */
+.app {
+  --bg: #1a1a2e;
+  --flaeche: #16213e;
+  --feld: #0f1629;
+  --rand: #2a3a5e;
+  --text: #e0e0e0;
+  --text-stark: #fff;
+  --text-mittel: #bbb;
+  --text-leise: #999;
+  --akzent: #4fc3f7;
+  --akzent2: #ffb74d;
+  --ok-text: #4ade80;
+  --stoer-bg: #3b1218;
+  --stoer-text: #ff8a80;
+  --knopf-bg: #2a3a5e;
+  --knopf-text: #fff;
+  color-scheme: dark;
+}
+.app.hell {
+  --bg: #eef1f6;
+  --flaeche: #ffffff;
+  --feld: #ffffff;
+  --rand: #c3cddc;
+  --text: #1c2333;
+  --text-stark: #0b1220;
+  --text-mittel: #445064;
+  --text-leise: #5f6b7d;
+  --akzent: #0277bd;
+  --akzent2: #e65100;
+  --ok-text: #2e7d32;
+  --stoer-bg: #fdecea;
+  --stoer-text: #b71c1c;
+  --knopf-bg: #dfe5ef;
+  --knopf-text: #1c2333;
+  color-scheme: light;
+}
+
+.kopfzeile { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+button.thema { flex-shrink: 0; padding: 0.3rem 0.7rem; }
+
 .app {
   font-family: system-ui, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0.6rem 1rem;
-  background: #1a1a2e;
+  background: var(--bg);
   min-height: 100vh;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
-h1 { font-size: 1.15rem; margin: 0 0 0.4rem; color: #fff; }
-h2 { font-size: 1rem; margin: 0 0 0.6rem; color: #fff; }
+h1 { font-size: 1.15rem; margin: 0 0 0.4rem; color: var(--text-stark); }
+h2 { font-size: 1rem; margin: 0 0 0.6rem; color: var(--text-stark); }
 
 .connection { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.url-input { flex: 1; min-width: 200px; padding: 0.35rem; background: #0f1629; color: #e0e0e0; border: 1px solid #2a3a5e; border-radius: 4px; }
+.url-input { flex: 1; min-width: 200px; padding: 0.35rem; background: var(--feld); color: var(--text); border: 1px solid var(--rand); border-radius: 4px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; background: #c62828; }
 .dot.on { background: #43a047; }
 .tick-badge {
   font-size: 0.75rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #4ade80;
+  color: var(--ok-text);
   min-width: 1.5rem;
   text-align: center;
   transition: color 0.2s;
 }
-.tick-badge.pulse { color: #fff; }
-.status-line { font-size: 0.8rem; color: #999; margin: 0.25rem 0 0.5rem; }
+.tick-badge.pulse { color: var(--text-stark); }
+.status-line { font-size: 0.8rem; color: var(--text-leise); margin: 0.25rem 0 0.5rem; }
 
 button {
   padding: 0.45rem 0.9rem;
   border: none;
   border-radius: 4px;
-  background: #2a3a5e;
-  color: #fff;
+  background: var(--knopf-bg);
+  color: var(--knopf-text);
   cursor: pointer;
   font-size: 0.9rem;
 }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
-button.start { background: #2e7d32; }
-button.stopp { background: #b71c1c; }
+button.start { background: #2e7d32; color: #fff; }
+button.stopp { background: #b71c1c; color: #fff; }
 button.quitt { background: #f9a825; color: #000; }
-button.anzeige { background: transparent; border: 1px solid #2a3a5e; color: #bbb; }
-button.anzeige.aktiv { border-color: #4fc3f7; color: #4fc3f7; }
+button.anzeige { background: transparent; border: 1px solid var(--rand); color: var(--text-mittel); }
+button.anzeige.aktiv { border-color: var(--akzent); color: var(--akzent); }
 
-section { background: #16213e; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.6rem; }
+section { background: var(--flaeche); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.6rem; }
 
 .zustand { text-align: center; font-size: 1.2rem; font-weight: 600; border: 2px solid transparent; }
 .zustand.laeuft { border-color: #43a047; }
-.zustand.stoerung { border-color: #c62828; background: #3b1218; }
-.fehler { margin-top: 0.4rem; font-size: 0.95rem; color: #ff8a80; }
+.zustand.stoerung { border-color: #c62828; background: var(--stoer-bg); }
+.fehler { margin-top: 0.4rem; font-size: 0.95rem; color: var(--stoer-text); }
 
 .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; background: none; padding: 0; }
-.kachel { background: #16213e; border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.kachel { background: var(--flaeche); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.2rem; }
 .kachel.gross { grid-column: 1 / -1; }
-.label { font-size: 0.8rem; color: #999; }
-.wert { font-size: 1.6rem; font-variant-numeric: tabular-nums; color: #fff; }
-.kachel.gross .wert { font-size: 2.6rem; color: #4fc3f7; }
-.wert small { font-size: 0.9rem; color: #999; }
-.neben { font-size: 0.85rem; color: #bbb; }
+.label { font-size: 0.8rem; color: var(--text-leise); }
+.wert { font-size: 1.6rem; font-variant-numeric: tabular-nums; color: var(--text-stark); }
+.kachel.gross .wert { font-size: 2.6rem; color: var(--akzent); }
+.wert small { font-size: 0.9rem; color: var(--text-leise); }
+.neben { font-size: 0.85rem; color: var(--text-mittel); }
 
-.trend-kopf { display: flex; justify-content: space-between; font-size: 0.8rem; color: #999; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem; }
+.trend-kopf { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-leise); margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem; }
 .legende i { display: inline-block; width: 12px; height: 3px; margin: 0 0.3rem 0.2rem 0.6rem; vertical-align: middle; }
-.legende i.f { background: #4fc3f7; }
-.legende i.a { background: #ffb74d; }
+.legende i.f { background: var(--akzent); }
+.legende i.a { background: var(--akzent2); }
 .trend-flaeche { position: relative; height: 160px; }
-.trend-flaeche canvas { position: absolute; inset: 0; width: 100%; height: 100%; background: #0f1629; border-radius: 4px; }
+.trend-flaeche canvas { position: absolute; inset: 0; width: 100%; height: 100%; background: var(--feld); border-radius: 4px; }
 
 .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .soll { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
 .soll input[type='range'] { flex: 1; min-width: 160px; }
-.zahl { width: 5.5rem; padding: 0.3rem; background: #0f1629; color: #e0e0e0; border: 1px solid #2a3a5e; border-radius: 4px; }
-.hinweis { font-size: 0.8rem; color: #999; margin: 0.5rem 0 0; }
+.zahl { width: 5.5rem; padding: 0.3rem; background: var(--feld); color: var(--text); border: 1px solid var(--rand); border-radius: 4px; }
+.hinweis { font-size: 0.8rem; color: var(--text-leise); margin: 0.5rem 0 0; }
 
 /* Tablet quer (z. B. 1280x800): Messwerte in einer Zeile, Verlauf und Bedienung nebeneinander */
 @media (min-width: 900px) {
