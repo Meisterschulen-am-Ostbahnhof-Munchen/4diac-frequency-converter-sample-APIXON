@@ -1,60 +1,205 @@
 #!/usr/bin/env python3
-"""ELF-Libs-Manifest-Logik - 1:1 aus dem gleichnamigen Modul in
-4diac_training1 (Ventilsteuerung/scripts_central/elf_libs_manifest_lib.py,
-Branch feature/elf-loader) uebernommen, PREFIX_TO_LIB/TYPE_NAME_TO_LIB/
-LIB_VERSIONS/LIB_DIR_NAME sind dort anhand eines vollstaendigen Scans aller
-.fbt/.fct-Namensraeume unter 4diacIDE-workspace/.lib verifiziert worden
-(2026-10-10). Krauternters .lib/-Verzeichnis ist inhaltlich identisch zu
-4diac_training1s (gleicher Library-Split), die Tabellen gelten daher 1:1 -
-bei Abweichungen (neue/entfernte Libs) zuerst in 4diac_training1 fixen und
-von dort erneut uebernehmen, nicht hier getrennt weiterentwickeln.
-
-Genutzt von make_libs_manifest.py und make_fu_demo_deploy.py.
-Uebernommen aus Krauternter (Ventilsteuerung/scripts_central/), Lib-Tabellen unveraendert.
+"""ELF-Libs-Manifest-Logik - urspruenglich als Python-Portierung von
+elf_libs_manifest_lib.sh (Commit 10b540e53, Branch feature/elf-loader) zum
+Vergleich entstanden, inzwischen die massgebliche Implementierung: genutzt
+von make_libs_manifest.py und make_4diac_training1_deploy.py.
 
 Format/Kanonisierung sind seit 2026-10-09 durch den Firmware-Code
 (elf_libs_loader, LOGIBUS_integration_datapanel feature/elf-loader)
-festgelegt.
+festgelegt. Siehe die Git-Historie von elf_libs_manifest_lib.sh (Bash-
+Vorgaenger, Branch feature/elf-loader) fuer die ausfuehrliche
+Begruendung/Historie jeder einzelnen Tabelle unten - hier nur 1:1
+uebernommen, nicht neu hergeleitet.
 """
 
 from __future__ import annotations
 
 import hashlib
+import http.client
+import ipaddress
 import json
 import os
 import re
+import socket
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional
 
 # Im Repo liegt dieses Modul unter Ventilsteuerung/scripts_central/ (2 Ebenen
-# runter von Ventilsteuerung). Im Google-Drive-Release-Ordner (siehe
-# make_krauternter_release.py) liegen dagegen ALLE Dateien flach nebeneinander
-# (1 Ebene) - dort ist "parent" bereits das richtige Basisverzeichnis
-# (elf-libs/ liegt dort direkt daneben, siehe ELF_DIR unten). Erkennung ueber
-# das Vorhandensein von 4diacIDE-workspace/ (existiert nur im Repo).
+# runter von Ventilsteuerung). training1 hat (anders als Krauternter) keinen
+# flachen Release-Ordner, die Erkennung ist hier also nie wirklich gefordert -
+# wird trotzdem 1:1 mitgefuehrt, damit beide Repos dieselbe Logik behalten
+# (Krauternter-Release-Ordner-Fall: siehe dortige elf_libs_manifest_lib.py).
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if (_SCRIPT_DIR.parent / "4diacIDE-workspace").is_dir():
     VENTILSTEUERUNG_DIR = _SCRIPT_DIR.parent
 else:
     VENTILSTEUERUNG_DIR = _SCRIPT_DIR
 
-# True nur im echten Repo-Checkout (4diacIDE-workspace/ vorhanden, siehe
-# oben) - dort existieren die MANIFEST.MF-Dateien unter .lib/, aus denen
-# lib_requires_of() liest. Im flachen Google-Drive-Release-Ordner ist das
-# False: dort MUSS ein bereits fertiges <Basis>.libs.json verwendet werden
-# (siehe make_krauternter_deploy.py), statt requires hier neu (und dann
-# fälschlich leer) zu berechnen - siehe BERICHT_Manifest_ohne_requires_2026-10-14.md
-# (STG2-5 starteten deswegen am 2026-10-14 nicht).
-IS_REPO_CONTEXT = (VENTILSTEUERUNG_DIR / "4diacIDE-workspace").is_dir()
-
-# Architektur je Knoten (APIXON = ESP32-P4).
+# Architektur je Knoten (von Franz bestaetigt). Nur noch Rueckfall fuer
+# Firmware ohne GET /deviceinfo/ (siehe resolve_node_arch) und fuer das rein
+# lokale make_libs_manifest.py. Unbekannte IPs: siehe DEFAULT_ARCH im
+# Preload-Skript; das Bootfile-Deploy ueberspringt sie.
 NODE_ARCH = {
+    "192.168.178.45": "riscv32",
     "192.168.1.11": "riscv32",
+    "192.168.4.1": "xtensa",
 }
 
 # forte_abi: von Hand erhoehte Nummer, wenn sich FORTE-Basisklassen aendern.
-FORTE_ABI = 6
+FORTE_ABI = 7
+
+
+# Architekturen, fuer die ELFs gebaut werden (Unterordner elf/<arch>/ der Libs).
+SUPPORTED_ARCHS = ("riscv32", "xtensa")
+
+
+class NonInternalHostError(OSError):
+    """Ziel ist kein Knoten im internen Netz (siehe is_internal_host)."""
+
+
+def is_internal_host(host: str) -> bool:
+    """Nur Knoten im internen Netz werden angesprochen: private Adressen
+    (10.x, 172.16-31.x, 192.168.x, IPv6 ULA), link-local (169.254.x, fe80::),
+    loopback sowie mDNS-Namen (*.local) und localhost. Alles andere, z. B.
+    oeffentliche Adressen oder Internet-Namen, wird abgelehnt."""
+    name = host.strip().rstrip(".").lower()
+    if name == "localhost" or name.endswith(".local"):
+        return True
+    try:
+        addr = ipaddress.ip_address(name.strip("[]"))
+    except ValueError:
+        return False
+    return addr.is_private or addr.is_link_local or addr.is_loopback
+
+
+def internal_host(host: str) -> str:
+    """host unveraendert zurueck, wenn er intern ist, sonst NonInternalHostError."""
+    if not is_internal_host(host):
+        raise NonInternalHostError(f"{host} ist kein Knoten im internen Netz (erlaubt: 10.x, 172.16-31.x, 192.168.x, 169.254.x, *.local)")
+    return host
+
+
+def resolve_host(host: str) -> Optional[str]:
+    """Hostnamen (z. B. logibus.local) EINMAL in eine IP aufloesen; eine IP
+    kommt unveraendert zurueck, None wenn der Name nicht aufloesbar ist.
+    Die Skripte bauen pro Datei mehrere Verbindungen auf und http.client
+    loest den Namen jedes Mal neu auf - per mDNS kostete das am S3 als
+    Access Point je 12,4 s statt 0,09 s ueber die IP (Franz, 2026-11-06).
+    Die eine Aufloesung bleibt dort langsam (auch nur IPv4 dauerte 12 s),
+    entscheidend ist, dass sie nur einmal pro Knoten passiert. IPv4 zuerst,
+    IPv6 nur, wenn es keine IPv4-Adresse gibt."""
+    name = host.strip().strip("[]")
+    try:
+        ipaddress.ip_address(name)
+        return host.strip()
+    except ValueError:
+        pass
+    for family in (socket.AF_INET, socket.AF_UNSPEC):
+        try:
+            infos = socket.getaddrinfo(name, 80, family, socket.SOCK_STREAM)
+        except OSError:
+            continue
+        if infos:
+            addr = str(infos[0][4][0])
+            # http.client braucht IPv6 in Klammern, sonst gilt der letzte Teil als Port
+            return f"[{addr}]" if ":" in addr else addr
+    return None
+
+
+def query_device_info(ip: str, timeout: float = 5) -> tuple[str, Optional[dict]]:
+    """GET /deviceinfo/ (Firmware LOGIBUS_integration_datapanel, JSON mit app,
+    bootloader, chip, flash, psram, heap, elf_libs, ...).
+
+    Ergebnis (Zustand, Info):
+    - ("ok", dict): gueltige Antwort
+    - ("legacy", None): HTTP 404 - Firmware ohne den Endpunkt (dort laeuft
+      GET /deviceinfo/ in die Verzeichnisanzeige und liefert 404 "Directory
+      does not exist")
+    - ("error", None): anderer Status, kaputte HTTP-Antwort, kein JSON-Objekt
+      oder Verbindungsfehler oder kein Knoten im internen Netz
+      (is_internal_host) - dann ist nichts ueber das Geraet bekannt."""
+    if not is_internal_host(ip):
+        print(f"  FEHLER: {ip} ist kein Knoten im internen Netz - /deviceinfo/ nicht abgefragt.")
+        return "error", None
+    conn = http.client.HTTPConnection(internal_host(ip), timeout=timeout)
+    try:
+        conn.request("GET", "/deviceinfo/")
+        resp = conn.getresponse()
+        body = resp.read()
+        if resp.status == 404:
+            return "legacy", None
+        if resp.status != 200:
+            print(f"  FEHLER: {ip} /deviceinfo/ antwortet mit HTTP {resp.status}.")
+            return "error", None
+        info = json.loads(body.decode("utf-8"))
+        if not isinstance(info, dict):
+            print(f"  FEHLER: {ip} /deviceinfo/ liefert kein JSON-Objekt.")
+            return "error", None
+        return "ok", info
+    except (OSError, ValueError, http.client.HTTPException) as exc:
+        print(f"  FEHLER: {ip} /deviceinfo/ nicht lesbar ({type(exc).__name__}: {exc}).")
+        return "error", None
+    finally:
+        conn.close()
+
+
+def _elf_arch_from_device_info(ip: str, info: dict) -> Optional[str]:
+    """Prueft elf_libs aus /deviceinfo/: ELF-Loader vorhanden, unterstuetzte
+    Architektur, Host-Symboltabelle, FORTE_ABI wie FORTE_ABI oben. Liefert die
+    Architektur oder None (mit Fehlermeldung)."""
+    elf = info.get("elf_libs")
+    if not isinstance(elf, dict) or not elf.get("supported"):
+        print(f"  FEHLER: Firmware auf {ip} hat keinen ELF-Loader.")
+        return None
+    arch = elf.get("arch")
+    abi = elf.get("forte_abi")
+    if not isinstance(arch, str) or arch not in SUPPORTED_ARCHS:
+        print(f"  FEHLER: Firmware auf {ip} meldet keine unterstuetzte ELF-Architektur ({arch!r}, erwartet: {', '.join(SUPPORTED_ARCHS)}).")
+        return None
+    if not elf.get("host_table"):
+        print(f"  FEHLER: Firmware auf {ip} hat keine Host-Symboltabelle fuer {arch} - ELFs koennen dort nicht laden.")
+        return None
+    if abi != FORTE_ABI:
+        print(f"  FEHLER: Firmware auf {ip} hat FORTE_ABI {abi}, die ELFs sind fuer FORTE_ABI {FORTE_ABI} gebaut - Firmware oder ELFs passen nicht zusammen.")
+        return None
+
+    return arch
+
+
+def resolve_node_arch(ip: str, fallback: Optional[str] = None) -> Optional[str]:
+    """Architektur der ELF-Libs fuer einen Knoten, vom Geraet selbst
+    (GET /deviceinfo/, elf_libs.arch). Meldet das Geraet eine andere
+    FORTE_ABI als FORTE_ABI oben, keine Host-Symboltabelle oder keine
+    unterstuetzte Architektur, ist das ein Fehler: None, die ELFs wuerden dort
+    nicht laden. Ebenso, wenn /deviceinfo/ anders als mit 404 scheitert
+    (fail closed).
+
+    Nur bei 404 (aeltere Firmware ohne /deviceinfo/) gilt NODE_ARCH, sonst
+    fallback - mit Warnung, weil das nur geraten ist."""
+    state, info = query_device_info(ip)
+    if state == "error":
+        print(f"  FEHLER: Geraet {ip} nicht pruefbar - keine ELFs/Manifest.")
+        return None
+    if state == "legacy" or info is None:
+        arch = NODE_ARCH.get(ip, fallback)
+        if arch:
+            print(f"  WARNUNG: {ip} liefert kein /deviceinfo/ (aeltere Firmware?) - Architektur {arch} aus NODE_ARCH/Default angenommen.")
+        else:
+            print(f"  FEHLER: {ip} liefert kein /deviceinfo/ und steht nicht in NODE_ARCH - Architektur unbekannt.")
+        return arch
+
+    arch = _elf_arch_from_device_info(ip, info)
+    if arch is None:
+        return None
+
+    app = info.get("app") if isinstance(info.get("app"), dict) else {}
+    chip = info.get("chip") if isinstance(info.get("chip"), dict) else {}
+    print(f"  Geraet: {chip.get('model', '?')} ({chip.get('target', '?')}), Firmware {app.get('version', '?')}, {arch}, FORTE_ABI {FORTE_ABI}")
+    known = NODE_ARCH.get(ip)
+    if known and known != arch:
+        print(f"  HINWEIS: NODE_ARCH nennt fuer {ip} {known}, das Geraet meldet {arch} - es gilt das Geraet.")
+    return arch
 
 # Namensraum-Praefix -> Lib-Name. 1:1 aus elf_libs_manifest_lib.sh
 # uebernommen (siehe dort fuer die ausfuehrliche Begruendung der
@@ -67,6 +212,8 @@ PREFIX_TO_LIB = {
     "OSCAT::Basic": "OSCAT_Basic",
     "OSCAT::Building": "OSCAT_Building",
     "OSCAT::Network": "OSCAT_Network",
+    "FIFO": "FIFO",
+    "FIFO_adapter": "FIFO_adapter",
     "OSCAT_adapter": "OSCAT_adapter",
     "Option": "Option",
     "Option::conversion": "Option",
@@ -111,6 +258,7 @@ PREFIX_TO_LIB = {
     "iec61131::timers": "iec61131-3",
     "isobus::TC": "isobus_TC",
     "isobus::UT": "isobus_UT",
+    "isobus::fs": "isobus_fs",
     "isobus::pgn": "isobus_pgn",
     "isobus::tecu": "isobus_tecu",
     "logiBUS::bistableElements": "logiBUS_utils",
@@ -132,6 +280,11 @@ TYPE_NAME_TO_LIB = {
     # Firmware (Modul system) - "" = kein ELF, wird in resolve_required_libs()
     # uebersprungen.
     "E_RESTART": "",
+    # isobus::UT::dialog: Drei-Segment-Paket, der Zwei-Segment-Key isobus::UT
+    # wuerde isobus_UT liefern.
+    "DLG_CTRL": "isobus_UT_dialog",
+    "DLG_MessageBox": "isobus_UT_dialog",
+    "DLG_Toast": "isobus_UT_dialog",
     # adapter::conversion: Default adapter_conversion, Ausnahme logiBUS_utils_adapter
     "AQ_TO_AX": "logiBUS_utils_adapter",
     "AX_TO_AQ": "logiBUS_utils_adapter",
@@ -326,6 +479,8 @@ LIB_VERSIONS = {
     "OSCAT_Basic": "0.1.0",
     "OSCAT_Building": "0.1.0",
     "OSCAT_Network": "0.1.0",
+    "FIFO": "1.0.0",
+    "FIFO_adapter": "1.0.0",
     "OSCAT_adapter": "3.0.0",
     "Option": "1.0.0",
     "SafeArithmetic": "3.0.0",
@@ -341,8 +496,10 @@ LIB_VERSIONS = {
     "iec61131-3": "3.0.1",
     "iec61131-3-bool": "3.0.1",
     "isobus_TC": "3.0.0",
+    "isobus_fs": "1.0.0",
     "isobus_UT": "3.1.1",
     "isobus_UT_adapter": "3.1.1",
+    "isobus_UT_dialog": "3.0.0",
     "isobus_UT_io": "3.0.1",
     "isobus_UT_io_adapter": "3.0.0",
     "isobus_pgn": "3.0.0",
@@ -353,7 +510,7 @@ LIB_VERSIONS = {
     "logiBUS_DI_CAN": "3.0.0",
     "logiBUS_bosch": "3.0.0",
     "logiBUS_esp32": "3.0.0",
-    "logiBUS_io": "3.0.0",
+    "logiBUS_io": "3.3.0",
     "logiBUS_safety": "3.0.0",
     "logiBUS_schieber": "3.0.0",
     "logiBUS_sections_bit": "1.0.0",
@@ -382,6 +539,8 @@ LIB_DIR_NAME = {
     "OSCAT_Basic": "OSCAT_Basic-0.1.0",
     "OSCAT_Building": "OSCAT_Building-0.1.0",
     "OSCAT_Network": "OSCAT_Network-0.1.0",
+    "FIFO": "FIFO-1.0.0",
+    "FIFO_adapter": "FIFO_adapter-1.0.0",
     "OSCAT_adapter": "OSCAT_adapter-3.0.0",
     "Option": "Option-1.0.0",
     "SafeArithmetic": "SafeArithmetic-3.0.0",
@@ -397,8 +556,10 @@ LIB_DIR_NAME = {
     "iec61131-3": "iec61131-3-3.0.0",
     "iec61131-3-bool": "iec61131-3-bool-3.0.0",
     "isobus_TC": "isobus_TC-3.0.0",
+    "isobus_fs": "isobus_fs-1.0.0",
     "isobus_UT": "isobus_UT-3.0.0",
     "isobus_UT_adapter": "isobus_UT_adapter-3.0.0",
+    "isobus_UT_dialog": "isobus_UT_dialog-3.0.0",
     "isobus_UT_io": "isobus_UT_io-3.0.0",
     "isobus_UT_io_adapter": "isobus_UT_io_adapter-3.0.0",
     "isobus_pgn": "isobus_pgn-3.0.0",
@@ -409,7 +570,7 @@ LIB_DIR_NAME = {
     "logiBUS_DI_CAN": "logiBUS_DI_CAN-3.0.0",
     "logiBUS_bosch": "logiBUS_bosch-3.0.0",
     "logiBUS_esp32": "logiBUS_esp32-3.0.0",
-    "logiBUS_io": "logiBUS_io-3.0.0",
+    "logiBUS_io": "logiBUS_io-3.3.0",
     "logiBUS_safety": "logiBUS_safety-3.0.0",
     "logiBUS_schieber": "logiBUS_schieber-3.0.0",
     "logiBUS_sections_bit": "logiBUS_sections_bit-1.0.0",
