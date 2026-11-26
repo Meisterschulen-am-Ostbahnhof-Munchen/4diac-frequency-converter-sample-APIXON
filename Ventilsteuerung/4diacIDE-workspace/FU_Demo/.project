@@ -47,6 +47,16 @@
 			<locationURI>WORKSPACE_LOC/.lib/DataPanel-3.0.0/typelib</locationURI>
 		</link>
 		<link>
+			<name>External Libraries/FIFO</name>
+			<type>2</type>
+			<locationURI>WORKSPACE_LOC/.lib/FIFO-1.0.0/typelib</locationURI>
+		</link>
+		<link>
+			<name>External Libraries/FIFO_adapter</name>
+			<type>2</type>
+			<locationURI>WORKSPACE_LOC/.lib/FIFO_adapter-1.0.0/typelib</locationURI>
+		</link>
+		<link>
 			<name>External Libraries/Funk</name>
 			<type>2</type>
 			<locationURI>WORKSPACE_LOC/.lib/Funk-3.0.0/typelib</locationURI>
@@ -187,6 +197,11 @@
 			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_adapter-3.0.0/typelib</locationURI>
 		</link>
 		<link>
+			<name>External Libraries/isobus_UT_dialog</name>
+			<type>2</type>
+			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_dialog-3.0.0/typelib</locationURI>
+		</link>
+		<link>
 			<name>External Libraries/isobus_UT_io</name>
 			<type>2</type>
 			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_io-3.0.0/typelib</locationURI>
@@ -195,6 +210,11 @@
 			<name>External Libraries/isobus_UT_io_adapter</name>
 			<type>2</type>
 			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_io_adapter-3.0.0/typelib</locationURI>
+		</link>
+		<link>
+			<name>External Libraries/isobus_fs</name>
+			<type>2</type>
+			<locationURI>WORKSPACE_LOC/.lib/isobus_fs-1.0.0/typelib</locationURI>
 		</link>
 		<link>
 			<name>External Libraries/isobus_pgn</name>
@@ -239,7 +259,7 @@
 		<link>
 			<name>External Libraries/logiBUS_io</name>
 			<type>2</type>
-			<locationURI>WORKSPACE_LOC/.lib/logiBUS_io-3.0.0/typelib</locationURI>
+			<locationURI>WORKSPACE_LOC/.lib/logiBUS_io-3.3.0/typelib</locationURI>
 		</link>
 		<link>
 			<name>External Libraries/logiBUS_safety</name>
@@ -360,6 +380,16 @@
 			<name>External Libraries/DataPanel/MANIFEST.MF</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/.lib/DataPanel-3.0.0/MANIFEST.MF</locationURI>
+		</link>
+		<link>
+			<name>External Libraries/FIFO/MANIFEST.MF</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/.lib/FIFO-1.0.0/MANIFEST.MF</locationURI>
+		</link>
+		<link>
+			<name>External Libraries/FIFO_adapter/MANIFEST.MF</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/.lib/FIFO_adapter-1.0.0/MANIFEST.MF</locationURI>
 		</link>
 		<link>
 			<name>External Libraries/Funk/MANIFEST.MF</name>
@@ -502,6 +532,11 @@
 			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_adapter-3.0.0/MANIFEST.MF</locationURI>
 		</link>
 		<link>
+			<name>External Libraries/isobus_UT_dialog/MANIFEST.MF</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_dialog-3.0.0/MANIFEST.MF</locationURI>
+		</link>
+		<link>
 			<name>External Libraries/isobus_UT_io/MANIFEST.MF</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_io-3.0.0/MANIFEST.MF</locationURI>
@@ -510,6 +545,11 @@
 			<name>External Libraries/isobus_UT_io_adapter/MANIFEST.MF</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/.lib/isobus_UT_io_adapter-3.0.0/MANIFEST.MF</locationURI>
+		</link>
+		<link>
+			<name>External Libraries/isobus_fs/MANIFEST.MF</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/.lib/isobus_fs-1.0.0/MANIFEST.MF</locationURI>
 		</link>
 		<link>
 			<name>External Libraries/isobus_pgn/MANIFEST.MF</name>
@@ -554,7 +594,7 @@
 		<link>
 			<name>External Libraries/logiBUS_io/MANIFEST.MF</name>
 			<type>1</type>
-			<locationURI>WORKSPACE_LOC/.lib/logiBUS_io-3.0.0/MANIFEST.MF</locationURI>
+			<locationURI>WORKSPACE_LOC/.lib/logiBUS_io-3.3.0/MANIFEST.MF</locationURI>
 		</link>
 		<link>
 			<name>External Libraries/logiBUS_safety/MANIFEST.MF</name>
